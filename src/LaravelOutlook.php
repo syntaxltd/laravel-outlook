@@ -5,6 +5,7 @@ namespace Dytechltd\LaravelOutlook;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Provider\GenericProvider;
 use League\OAuth2\Client\Token\AccessToken;
+use Microsoft\Graph\Graph;
 use Microsoft\Graph\Model\User;
 
 class LaravelOutlook
@@ -42,6 +43,11 @@ class LaravelOutlook
         session()->forget('userName');
         session()->forget('userEmail');
         session()->forget('userTimeZone');
+    }
+
+    public function getGraphClient(): Graph
+    {
+        return (new Graph)->setAccessToken($this->getAccessToken());
     }
 
     public function getAccessToken()
