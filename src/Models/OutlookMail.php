@@ -4,6 +4,7 @@ namespace Dytechltd\LaravelOutlook\Models;
 
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 use Microsoft\Graph\Exception\GraphException;
 use Microsoft\Graph\Graph;
 use Microsoft\Graph\Http\GraphResponse;
@@ -18,6 +19,12 @@ class OutlookMail extends Model
 
     private $to;
 
+    /**
+     * Save items to sent folder.
+     *
+     * @param bool $saveToSentItems
+     * @return $this
+     */
     public function saveToSentItems(bool $saveToSentItems): self
     {
         $this->saveToSentItems = $saveToSentItems;
@@ -25,6 +32,12 @@ class OutlookMail extends Model
         return $this;
     }
 
+    /**
+     * Mail subject.
+     *
+     * @param string $subject
+     * @return $this
+     */
     public function withSubject(string $subject): self
     {
         $this->subject = $subject;
@@ -32,6 +45,12 @@ class OutlookMail extends Model
         return $this;
     }
 
+    /**
+     * Mail body.
+     *
+     * @param string $body
+     * @return $this
+     */
     public function withBody(string $body): self
     {
         $this->body = $body;
@@ -39,6 +58,12 @@ class OutlookMail extends Model
         return $this;
     }
 
+    /**
+     * Recipients.
+     *
+     * @param array $to
+     * @return $this
+     */
     public function to(array $to): self
     {
         $this->to = $to;
@@ -81,5 +106,27 @@ class OutlookMail extends Model
                 ]
             ],
         ])->execute();
+    }
+
+    /**
+     * @throws GuzzleException
+     * @throws GraphException
+     */
+    public function get(): Collection
+    {
+        /**
+         * @var Graph $graph
+         */
+        $graph = app('laravel-outlook')->getGraphClient();
+
+        /**
+         * @var GraphResponse $response
+         */
+        $response = $graph->createRequest('GET', '/me/messages')
+            ->addHeaders([
+                'outlook.body-content-type' => 'text'
+            ])->execute();
+
+        return collect($response->getBody()['value']);
     }
 }
