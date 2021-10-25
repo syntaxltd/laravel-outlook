@@ -17,5 +17,12 @@
             "Dytechltd\\LaravelOutlook\\": "src/"
         }
     },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Dytechltd\\LaravelOutlook\\LaravelOutlookServiceProvider"
+            ]
+        }
+    },
     "minimum-stability": "dev"
 }
