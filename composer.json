@@ -1,0 +1,18 @@
+{
+    "name": "dytechltd/laravel-outlook",
+    "description": "Laravel outlook services integration",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "Dytechltd\\LaravelOutlook\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Dennis Mwea",
+            "email": "mweadennis2@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {}
+}
