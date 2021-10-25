@@ -64,9 +64,9 @@ class LoginController extends Controller
 
                 app('laravel-outlook')->storeTokens($accessToken, $user);
 
-                return redirect('/test');
+                return redirect('/');
             } catch (IdentityProviderException $exception) {
-                return redirect('/test')
+                return redirect('/')
                     ->with('error', 'Error requesting access token')
                     ->with('errorDetail', json_encode($exception->getResponseBody()));
             }
@@ -81,6 +81,6 @@ class LoginController extends Controller
     {
         app('laravel-outlook')->clearTokens();
 
-        return redirect('/test');
+        return redirect('/');
     }
 }
