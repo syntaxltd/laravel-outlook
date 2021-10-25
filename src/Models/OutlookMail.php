@@ -129,4 +129,26 @@ class OutlookMail extends Model
 
         return collect($response->getBody()['value']);
     }
+
+    /**
+     * @throws GuzzleException
+     * @throws GraphException
+     */
+    public function getMessage(string $id): Collection
+    {
+        /**
+         * @var Graph $graph
+         */
+        $graph = app('laravel-outlook')->getGraphClient();
+
+        /**
+         * @var GraphResponse $response
+         */
+        $response = $graph->createRequest('GET', "/me/messages/$id")
+            ->addHeaders([
+                'outlook.body-content-type' => 'text'
+            ])->execute();
+
+        return collect($response->getBody());
+    }
 }
