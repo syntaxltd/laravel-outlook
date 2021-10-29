@@ -1,15 +1,15 @@
 <?php
 
-namespace Dytechltd\LaravelOutlook\Http\Controllers\Auth;
+namespace Syntax\LaravelOutlook\Http\Controllers\Auth;
 
-use Dytechltd\LaravelOutlook\Exceptions\InvalidStateException;
-use Dytechltd\LaravelOutlook\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
 use Microsoft\Graph\Graph;
 use Microsoft\Graph\Model\User;
+use Syntax\LaravelOutlook\Exceptions\InvalidStateException;
+use Syntax\LaravelOutlook\Http\Controllers\Controller;
 use Throwable;
 
 class LoginController extends Controller

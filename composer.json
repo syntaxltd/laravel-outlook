@@ -1,28 +1,28 @@
 {
-    "name": "dytechltd/laravel-outlook",
-    "description": "Laravel outlook services integration",
-    "type": "library",
-    "authors": [
-        {
-            "name": "Dennis Mwea",
-            "email": "mweadennis2@gmail.com"
-        }
-    ],
-    "require": {
-        "league/oauth2-client": "dev-master",
-        "microsoft/microsoft-graph": "dev-dev"
-    },
-    "autoload": {
-        "psr-4": {
-            "Dytechltd\\LaravelOutlook\\": "src/"
-        }
-    },
-    "extra": {
-        "laravel": {
-            "providers": [
-                "Dytechltd\\LaravelOutlook\\LaravelOutlookServiceProvider"
-            ]
-        }
-    },
-    "minimum-stability": "dev"
+	"name": "syntaxltd/laravel-social-integration",
+	"description": "Laravel outlook services integration",
+	"type": "library",
+	"authors": [
+		{
+			"name": "Dennis Mwea",
+			"email": "mweadennis2@gmail.com"
+		}
+	],
+	"require": {
+		"league/oauth2-client": "dev-master",
+		"microsoft/microsoft-graph": "dev-dev"
+	},
+	"autoload": {
+		"psr-4": {
+			"Syntax\\LaravelOutlook\\": "src/"
+		}
+	},
+	"extra": {
+		"laravel": {
+			"providers": [
+				"Syntax\\LaravelOutlook\\LaravelOutlookServiceProvider"
+			]
+		}
+	},
+	"minimum-stability": "dev"
 }

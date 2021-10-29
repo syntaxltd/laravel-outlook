@@ -1,9 +1,7 @@
 <?php
 
-use Dytechltd\LaravelOutlook\Http\Controllers\Auth\LoginController;
 use Illuminate\Support\Facades\Route;
-use Microsoft\Graph\Graph;
-use Microsoft\Graph\Http\GraphResponse;
+use Syntax\LaravelOutlook\Http\Controllers\Auth\LoginController;
 
 Route::middleware('web')->group(function () {
     Route::group(['prefix' => '/oauth', 'as' => 'oauth.'], function () {

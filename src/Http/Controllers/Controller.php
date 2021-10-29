@@ -1,6 +1,6 @@
 <?php
 
-namespace Dytechltd\LaravelOutlook\Http\Controllers;
+namespace Syntax\LaravelOutlook\Http\Controllers;
 
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Bus\DispatchesJobs;

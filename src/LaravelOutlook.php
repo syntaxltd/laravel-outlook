@@ -1,6 +1,6 @@
 <?php
 
-namespace Dytechltd\LaravelOutlook;
+namespace Syntax\LaravelOutlook;
 
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Provider\GenericProvider;

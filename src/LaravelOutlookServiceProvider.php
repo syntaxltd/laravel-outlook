@@ -1,6 +1,6 @@
 <?php
 
-namespace Dytechltd\LaravelOutlook;
+namespace Syntax\LaravelOutlook;
 
 use Illuminate\Support\ServiceProvider;
 
