@@ -4,6 +4,7 @@ namespace Syntax\LaravelOutlook;
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Safe\Exceptions\DatetimeException;
 use function Safe\date;
 
 class LaravelOutlookServiceProvider extends ServiceProvider
@@ -21,6 +22,7 @@ class LaravelOutlookServiceProvider extends ServiceProvider
      * Bootstrap any package services.
      *
      * @return void
+     * @throws DatetimeException
      */
     public function boot()
     {
