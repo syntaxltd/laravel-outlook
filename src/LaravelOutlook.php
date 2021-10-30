@@ -10,6 +10,11 @@ use Microsoft\Graph\Model\User;
 
 class LaravelOutlook
 {
+    /**
+     * Get microsoft generic provider.
+     *
+     * @return GenericProvider
+     */
     public function getOAuthClient(): GenericProvider
     {
         return new GenericProvider([
@@ -23,7 +28,15 @@ class LaravelOutlook
         ]);
     }
 
-    public function storeTokens(AccessToken $accessToken, User $user)
+    /**
+     * Save received access tokens from social account.
+     *
+     * @param AccessToken $accessToken
+     * @param User $user
+     *
+     * @return void
+     */
+    public function storeTokens(AccessToken $accessToken, User $user): void
     {
         session([
             'accessToken' => $accessToken->getToken(),
@@ -31,11 +44,16 @@ class LaravelOutlook
             'tokenExpires' => $accessToken->getExpires(),
             'userName' => $user->getDisplayName(),
             'userEmail' => null !== $user->getMail() ? $user->getMail() : $user->getUserPrincipalName(),
-            'userTimeZone' => $user->getMailboxSettings()->getTimeZone()
+            'userTimeZone' => $user->getMailboxSettings()->getTimeZone(),
         ]);
     }
 
-    public function clearTokens()
+    /**
+     * Delete saved access tokens.
+     *
+     * @return void
+     */
+    public function clearTokens(): void
     {
         session()->forget('accessToken');
         session()->forget('refreshToken');
@@ -50,7 +68,12 @@ class LaravelOutlook
         return (new Graph)->setAccessToken($this->getAccessToken());
     }
 
-    public function getAccessToken()
+    /**
+     * Get saved access token.
+     *
+     * @return string|null
+     */
+    public function getAccessToken(): string|null
     {
         // Check if tokens exist
         if (empty(session('accessToken')) ||
@@ -78,6 +101,7 @@ class LaravelOutlook
             ]);
 
             try {
+                /** @var AccessToken $newToken */
                 $newToken = $oauthClient->getAccessToken('refresh_token', [
                     'refresh_token' => session('refreshToken')
                 ]);
@@ -95,7 +119,14 @@ class LaravelOutlook
         return session('accessToken');
     }
 
-    public function updateTokens(AccessToken $accessToken)
+    /**
+     * Update saved access tokens.
+     *
+     * @param AccessToken $accessToken
+     *
+     * @return void
+     */
+    public function updateTokens(AccessToken $accessToken): void
     {
         session([
             'accessToken' => $accessToken->getToken(),
