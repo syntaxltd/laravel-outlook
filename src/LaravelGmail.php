@@ -3,9 +3,14 @@
 
 namespace Dytechltd\LaravelOutlook;
 
+use Dytechltd\LaravelOutlook\Exceptions\InvalidStateException;
+use Dytechltd\LaravelOutlook\Services\Message;
 use Dytechltd\LaravelOutlook\Traits\Configurable;
 use Google_Client;
 use Google_Service_Gmail;
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Storage;
 use League\Flysystem\Exception;
 use \Safe\file_get_contents;
@@ -22,11 +27,10 @@ class LaravelGmail extends Google_Client
     protected $app;
     protected $accessToken;
     protected $token;
-    protected $userId;
+    public $userId;
 
-    public function __construct(array $config = array(), $userId = null)
+    public function __construct($config = array(), $userId = null)
     {
-
         $this->userId = $userId;
 
         $this->configConstruct($config);
@@ -34,11 +38,6 @@ class LaravelGmail extends Google_Client
         parent::__construct($this->getConfigs());
 
         $this->configApi();
-
-        if ($this->checkPreviouslyLoggedIn()) {
-            $this->refreshTokenIfNeeded();
-        }
-
     }
 
     /**
@@ -48,55 +47,48 @@ class LaravelGmail extends Google_Client
      */
     public function getOAuthClient(): string
     {
+        $this->setState(base64_encode(tenant('id')));
         return $this->createAuthUrl();
     }
 
-    /**
-     * Check and return true if the user has previously logged in without checking if the token needs to refresh
-     *
-     * @return bool
-     */
-    public function checkPreviouslyLoggedIn(): bool
-    {
-
-        return !$this->config();
-    }
 
     /**
-     * Refresh the auth token if needed
-     *
-     * @return mixed|null
+     * @return array|string
+     * @throws \Exception
      */
-    private function refreshTokenIfNeeded(): mixed
+    public function makeToken()
     {
-        if ($this->isAccessTokenExpired()) {
-            $this->fetchAccessTokenWithRefreshToken($this->getRefreshToken());
-            $token = $this->getAccessToken();
-            parent::setAccessToken($token);
-            $this->saveAccessToken($token);
-
-            return $token;
+        if (parent::isAccessTokenExpired()) {
+            $request = Request::capture();
+            $code = (string) $request->input('code', null);
+            if (!is_null($code) && !empty($code)) {
+                $accessToken = $this->fetchAccessTokenWithAuthCode($code);
+                parent::setAccessToken($accessToken);
+                $this->storeTokens($accessToken);
+                return $accessToken;
+            } else {
+                throw new \Exception('No access token');
+            }
+        } else {
+            return $this->getAccessToken();
         }
-
-        return $this->token;
     }
-
 
     /**
      * Save the credentials in a file
      *
-     * @param  array  $config
+     * @param array $config
+     * @throws FileNotFoundException
      */
-    public function saveAccessToken(array $config)
+    public function storeTokens(array $config): void
     {
         $disk = Storage::disk('local');
-        $fileName = config('credentials_file_name');
+        $fileName = config('gmail.credentials_file_name');
         $file = "gmail/tokens/$fileName.json";
         $allowJsonEncrypt = config('gmail.allow_json_encrypt');
         $config['email'] = $this->emailAddress;
 
         if ($disk->exists($file)) {
-
             if (empty($config['email'])) {
                 if ($allowJsonEncrypt) {
                     $savedConfigToken = json_decode(decrypt($disk->get($file)), true);
@@ -116,6 +108,50 @@ class LaravelGmail extends Google_Client
         } else {
             $disk->put($file, json_encode($config));
         }
+    }
+
+    /**
+     * @return array|string|null
+     */
+    public function getAccessToken(): array|string|null
+    {
+        return parent::getAccessToken() ?: $this->config();
+    }
+
+    /**
+     * @return Message
+     * @throws InvalidStateException
+     */
+    public function getMessages(): Message
+    {
+        if ($this->getAccessToken()) {
+            return new Message($this);
+        }else{
+            throw new InvalidStateException('No credentials found.');
+        }
 
     }
+
+    /**
+     * Updates / sets the current userId for the service
+     *
+     * @return LaravelGmail
+     */
+    public function setUserId($userId): static
+    {
+        $this->userId = $userId;
+
+        return $this;
+    }
+
+    /**
+     * Returns the Gmail user email
+     *
+     * @return \Google_Service_Gmail_Profile
+     */
+    public function user()
+    {
+        return $this->config('email');
+    }
+
 }

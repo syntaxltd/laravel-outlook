@@ -26,7 +26,7 @@ trait Configurable
 		$disk = Storage::disk('local');
 		$fileName = $this->getFileName();
 		$file = "gmail/tokens/$fileName.json";
-		$allowJsonEncrypt = $this->_config['gmail.allow_json_encrypt'];
+		$allowJsonEncrypt = config('gmail.allow_json_encrypt');
 
 		if ($disk->exists($file)) {
 			if ($allowJsonEncrypt) {
@@ -56,8 +56,8 @@ trait Configurable
 			$userId = auth()->user()->id;
 		}
 
-		$credentialFilename = $this->_config['gmail.credentials_file_name'];
-		$allowMultipleCredentials = $this->_config['gmail.allow_multiple_credentials'];
+		$credentialFilename = config('gmail.credentials_file_name');
+		$allowMultipleCredentials = config('gmail.allow_multiple_credentials');
 
 		if (isset($userId) && $allowMultipleCredentials) {
 			return sprintf('%s-%s', $credentialFilename, $userId);
@@ -72,10 +72,10 @@ trait Configurable
 	public function getConfigs()
 	{
 		return [
-			'client_secret' => $this->_config['gmail.client_secret'],
-			'client_id' => $this->_config['gmail.client_id'],
-			'redirect_uri' => url($this->_config['gmail.redirect_url']),
-			'state' => $this->_config['gmail.state'] ?? null,
+			'client_secret' => config('gmail.client_secret'),
+			'client_id' => config('gmail.client_id'),
+			'redirect_uri' => url(config('gmail.redirect_url')),
+			'state' => config('gmail.state') ?? null,
 		];
 	}
 
@@ -88,8 +88,8 @@ trait Configurable
 
 	private function configApi()
 	{
-		$type = $this->_config['gmail.access_type'];
-		$approval_prompt = $this->_config['gmail.approval_prompt'];
+		$type = config('gmail.access_type');
+		$approval_prompt = config('gmail.approval_prompt');
 
 		$this->setScopes($this->getUserScopes());
 
@@ -107,7 +107,7 @@ trait Configurable
 
 	private function mapScopes(): array
     {
-		$scopes = array_merge($this->_config['gmail.scopes'] ?? [], $this->additionalScopes);
+		$scopes = array_merge(config('gmail.scopes') ?? [], $this->additionalScopes);
 		$scopes = array_unique(array_filter($scopes));
 		$mappedScopes = [];
 
@@ -117,7 +117,7 @@ trait Configurable
 			}
 		}
 
-		return array_merge($mappedScopes, $this->_config['gmail.additional_scopes'] ?? []);
+		return array_merge($mappedScopes, config('gmail.additional_scopes') ?? []);
 	}
 
 	private function scopeMap($scope)
