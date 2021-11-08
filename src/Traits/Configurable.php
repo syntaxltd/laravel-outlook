@@ -2,7 +2,10 @@
 
 namespace Dytechltd\LaravelOutlook\Traits;
 
+use Dytechltd\LaravelOutlook\Models\SocialAccessToken;
 use Google_Service_Gmail;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Arr;
 
@@ -23,47 +26,14 @@ trait Configurable
 
 	public function config($string = null)
 	{
-		$disk = Storage::disk('local');
-		$fileName = $this->getFileName();
-		$file = "gmail/tokens/$fileName.json";
-		$allowJsonEncrypt = config('gmail.allow_json_encrypt');
-
-		if ($disk->exists($file)) {
-			if ($allowJsonEncrypt) {
-				$config = json_decode(decrypt($disk->get($file)), true);
-			} else {
-				$config = json_decode($disk->get($file), true);
-			}
-
-			if ($string) {
-				if (isset($config[$string])) {
-					return $config[$string];
-				}
-			} else {
-				return $config;
-			}
-
-		}
-
-		return null;
-	}
-
-	private function getFileName()
-	{
-		if (property_exists(get_class($this), 'userId') && $this->userId) {
-			$userId = $this->userId;
-		} elseif (auth()->user()) {
-			$userId = auth()->user()->id;
-		}
-
-		$credentialFilename = config('gmail.credentials_file_name');
-		$allowMultipleCredentials = config('gmail.allow_multiple_credentials');
-
-		if (isset($userId) && $allowMultipleCredentials) {
-			return sprintf('%s-%s', $credentialFilename, $userId);
-		}
-
-		return $credentialFilename;
+        $config = SocialAccessToken::where('partner_user_id', $this->userId)->get()->toArray();
+        if ($string) {
+            if (isset($config[$string])) {
+                return $config[$string];
+            }
+        } else {
+            return $config;
+        }
 	}
 
 	/**

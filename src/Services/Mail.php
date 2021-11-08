@@ -60,6 +60,10 @@ class Mail extends LaravelGmail
      */
     public $subject;
 
+    /**
+     * @var
+     */
+    public $body;
 
     /**
      * @var \Google_Service_Gmail_MessagePart
@@ -95,10 +99,7 @@ class Mail extends LaravelGmail
             $this->setUserId($userId);
 
             $this->setMessage($message);
-
-            if ($preload) {
-                $this->setMetadata();
-            }
+            $this->setMetadata();
         }
     }
 
@@ -122,6 +123,7 @@ class Mail extends LaravelGmail
 
     /**
      * Sets the metadata from Mail when preloaded
+     * @throws \Exception
      */
     protected function setMetadata(): void
     {
@@ -131,6 +133,7 @@ class Mail extends LaravelGmail
         $this->nameFrom = isset($from['email']) ? $from['email'] : null;
 
         $this->subject = $this->getSubject();
+        $this->body = $this->getBody();
     }
     /**
      * Returns ID of the email
@@ -285,5 +288,37 @@ class Mail extends LaravelGmail
         }
 
         return collect($headers);
+    }
+
+    /**
+     * Returns a specific body part from an email
+     *
+     * @param string $type
+     *
+     * @return null|string
+     * @throws \Exception
+     */
+    public function getBody($type = 'text/plain')
+    {
+        $parts = $this->getAllParts($this->parts);
+
+        try {
+            if (!$parts->isEmpty()) {
+                foreach ($parts as $part) {
+                    if ($part->mimeType == $type) {
+                        return $part->body->data;
+                        //if there are no parts in payload, try to get data from body->data
+                    } elseif ($this->payload->body->data) {
+                        return $this->payload->body->data;
+                    }
+                }
+            } else {
+                return $this->payload->body->data;
+            }
+        } catch (\Exception $exception) {
+            throw new \Exception("Preload or load the single message before getting the body.");
+        }
+
+        return null;
     }
 }

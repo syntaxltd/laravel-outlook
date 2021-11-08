@@ -3,12 +3,15 @@
 
 namespace Dytechltd\LaravelOutlook;
 
+use Carbon\Carbon;
 use Dytechltd\LaravelOutlook\Exceptions\InvalidStateException;
+use Dytechltd\LaravelOutlook\Models\SocialAccessToken;
 use Dytechltd\LaravelOutlook\Services\Message;
 use Dytechltd\LaravelOutlook\Traits\Configurable;
 use Google_Client;
 use Google_Service_Gmail;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Storage;
@@ -22,11 +25,13 @@ class LaravelGmail extends Google_Client
     use Configurable {
         Configurable::__construct as configConstruct;
     }
+
     protected $emailAddress;
     protected $refreshToken;
     protected $app;
     protected $accessToken;
     protected $token;
+    private $configuration;
     public $userId;
 
     public function __construct($config = array(), $userId = null)
@@ -35,9 +40,15 @@ class LaravelGmail extends Google_Client
 
         $this->configConstruct($config);
 
+        $this->configuration = $config;
+
         parent::__construct($this->getConfigs());
 
         $this->configApi();
+
+        if ($this->checkPreviouslyLoggedIn()) {
+            $this->refreshTokenIfNeeded();
+        }
     }
 
     /**
@@ -47,7 +58,7 @@ class LaravelGmail extends Google_Client
      */
     public function getOAuthClient(): string
     {
-        $this->setState(base64_encode(tenant('id')));
+        $this->setState(base64_encode($this->userId));
         return $this->createAuthUrl();
     }
 
@@ -74,48 +85,54 @@ class LaravelGmail extends Google_Client
         }
     }
 
-    /**
-     * Save the credentials in a file
-     *
-     * @param array $config
-     * @throws FileNotFoundException
-     */
-    public function storeTokens(array $config): void
+    public function getToken()
     {
-        $disk = Storage::disk('local');
-        $fileName = config('gmail.credentials_file_name');
-        $file = "gmail/tokens/$fileName.json";
-        $allowJsonEncrypt = config('gmail.allow_json_encrypt');
-        $config['email'] = $this->emailAddress;
-
-        if ($disk->exists($file)) {
-            if (empty($config['email'])) {
-                if ($allowJsonEncrypt) {
-                    $savedConfigToken = json_decode(decrypt($disk->get($file)), true);
-                } else {
-                    $savedConfigToken = json_decode($disk->get($file), true);
-                }
-                if(isset( $savedConfigToken['email'])) {
-                    $config['email'] = $savedConfigToken['email'];
-                }
-            }
-
-            $disk->delete($file);
-        }
-
-        if ($allowJsonEncrypt) {
-            $disk->put($file, encrypt(json_encode($config)));
-        } else {
-            $disk->put($file, json_encode($config));
-        }
+        return parent::getAccessToken() ?: $this->config();
     }
-
     /**
      * @return array|string|null
      */
     public function getAccessToken(): array|string|null
     {
-        return parent::getAccessToken() ?: $this->config();
+        $token = parent::getAccessToken() ?: $this->config();
+
+        return $token;
+    }
+
+
+    /**
+     * Check and return true if the user has previously logged in without checking if the token needs to refresh
+     *
+     * @return bool
+     */
+    public function checkPreviouslyLoggedIn(): bool
+    {
+        $token = SocialAccessToken::where('partner_user_id', $this->userId)->get();
+        if(!empty($token)){
+            return !empty($token->access_token);
+        }
+
+        return false;
+    }
+
+    /**
+     * Refresh the auth token if needed
+     *
+     * @return mixed
+     * @throws FileNotFoundException
+     */
+    private function refreshTokenIfNeeded(): mixed
+    {
+        if ($this->isAccessTokenExpired()) {
+            $this->fetchAccessTokenWithRefreshToken($this->getRefreshToken());
+            $token = $this->getAccessToken();
+            $this->setAccessToken($token);
+            $this->storeTokens($token);
+
+            return $token;
+        }
+
+        return $this->token;
     }
 
     /**
@@ -124,11 +141,12 @@ class LaravelGmail extends Google_Client
      */
     public function getMessages(): Message
     {
-        if ($this->getAccessToken()) {
-            return new Message($this);
-        }else{
+
+        if (!$this->getToken()) {
             throw new InvalidStateException('No credentials found.');
         }
+
+        return new Message($this);
 
     }
 
@@ -154,4 +172,33 @@ class LaravelGmail extends Google_Client
         return $this->config('email');
     }
 
+
+    public function logout():void
+    {
+        $this->revokeToken();
+        $this->deleteAccessToken();
+    }
+    /**
+     * Save the credentials in a file
+     *
+     * @param array $config
+     * @throws FileNotFoundException
+     */
+    public function storeTokens(array $config): void
+    {
+        SocialAccessToken::updateOrCreate(
+            ['partner_user_id' => $this->userId],
+            [
+            'access_token' => $config['access_token'],
+            'refresh_token' => $config['refresh_token'],
+            'expires_at' => Carbon::parse(now())->addSeconds($config['expires_in'])
+        ]);
+    }
+
+    /**
+     * Delete the credentials in a file
+     */
+    public function deleteAccessToken(): void
+    {
+    }
 }
