@@ -1,14 +1,13 @@
 <?php
 
-namespace Syntax\LaravelOutlook;
+namespace Syntax\LaravelSocialIntegration;
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\App;
 use Illuminate\Support\ServiceProvider;
 use Safe\Exceptions\DatetimeException;
 use function Safe\date;
 
-class LaravelOutlookServiceProvider extends ServiceProvider
+class LaravelSocialIntegrationServiceProvider extends ServiceProvider
 {
     /**
      * This namespace is applied to your controller routes.

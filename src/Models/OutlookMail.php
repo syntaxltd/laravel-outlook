@@ -1,6 +1,6 @@
 <?php
 
-namespace Syntax\LaravelOutlook\Models;
+namespace Syntax\LaravelSocialIntegration\Models;
 
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Database\Eloquent\Model;

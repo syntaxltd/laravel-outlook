@@ -1,6 +1,6 @@
 <?php
 
-namespace Syntax\LaravelOutlook;
+namespace Syntax\LaravelSocialIntegration;
 
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Provider\GenericProvider;
@@ -8,7 +8,7 @@ use League\OAuth2\Client\Token\AccessToken;
 use Microsoft\Graph\Graph;
 use Microsoft\Graph\Model\User;
 
-class LaravelOutlook
+class LaravelSocialIntegration
 {
     /**
      * Get microsoft generic provider.

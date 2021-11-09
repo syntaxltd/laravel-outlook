@@ -1,103 +1,80 @@
 <?php
 
-namespace Dytechltd\LaravelOutlook\Services;
+namespace Dytechltd\LaravelSocialIntegration\Services;
 
-use Dytechltd\LaravelOutlook\LaravelGmail;
-use Dytechltd\LaravelOutlook\Traits\Filterable;
-use Dytechltd\LaravelOutlook\Traits\SendsParameters;
+use Dytechltd\LaravelSocialIntegration\LaravelGmail;
+use Dytechltd\LaravelSocialIntegration\Traits\Filterable;
+use Dytechltd\LaravelSocialIntegration\Traits\SendsParameters;
 use Google_Service_Gmail;
 
 class Message
 {
     use Filterable, SendsParameters;
 
-	public $service;
+    public $service;
 
-	public $preload = false;
+    public $preload = false;
 
-	public $pageToken;
+    public $pageToken;
 
-	public $client;
+    public $client;
 
-	/**
-	 * Optional parameter for getting single and multiple emails
-	 *
-	 * @var array
-	 */
-	protected $params = [];
+    /**
+     * Optional parameter for getting single and multiple emails
+     *
+     * @var array
+     */
+    protected $params = [];
 
-	/**
-	 * Message constructor.
-	 *
-	 * @param  LaravelGmail  $client
-	 */
-	public function __construct(LaravelGmail $client)
-	{
-		$this->client = $client;
-		$this->service = new Google_Service_Gmail($client);
-	}
+    /**
+     * Message constructor.
+     *
+     * @param LaravelGmail $client
+     */
+    public function __construct(LaravelGmail $client)
+    {
+        $this->client = $client;
+        $this->service = new Google_Service_Gmail($client);
+    }
 
-	/**
-	 * Returns a collection of Mail instances
-	 *
-	 * @param  string|null  $pageToken
-	 *
-	 * @return array
+    /**
+     * Returns a collection of Mail instances
+     *
+     * @param string|null $pageToken
+     *
+     * @return array
      * @throws \Google_Exception
-	 */
-	public function all(string $pageToken = null)
-	{
+     */
+    public function all(string $pageToken = null)
+    {
         $mails = [];
-		$response = $this->getMessagesResponse();
+        $response = $this->getMessagesResponse();
 
-		$messages = $response->getMessages();
+        $messages = $response->getMessages();
 
         $mails = count($messages) > 0 ? $this->batchRequest($messages) : [];
 
         return $mails;
-	}
-    /**
-     * Preload the information on each Mail objects.
-     * If is not preload you will have to call the load method from the Mail class
-     * @return $this
-     * @see Mail::load()
-     *
-     */
-    public function preload()
-    {
-        $this->preload = true;
-
-        return $this;
     }
 
-	/**
-	 * @return \Google_Service_Gmail_ListMessagesResponse|object
-	 * @throws \Google_Exception
-	 */
-	private function getMessagesResponse()
-	{
-
-		$responseOrRequest = $this->service->users_messages->listUsersMessages('me', $this->params);
-		//dd($responseOrRequest->getMessages());
-
-		if (get_class($responseOrRequest) === "GuzzleHttp\Psr7\Request") {
-			$response = $this->service->getClient()->execute($responseOrRequest,
-				'Google_Service_Gmail_ListMessagesResponse');
-
-			return $response;
-		}
-
-		return $responseOrRequest;
-	}
-
     /**
-     * @param $id
-     *
-     * @return \Google_Service_Gmail_Message
+     * @return \Google_Service_Gmail_ListMessagesResponse|object
+     * @throws \Google_Exception
      */
-    private function getRequest($id)
+    private function getMessagesResponse()
     {
-        return $this->service->users_messages->get('me', $id);
+
+        $responseOrRequest = $this->service->users_messages->listUsersMessages('me', $this->params);
+        //dd($responseOrRequest->getMessages());
+
+        if (get_class($responseOrRequest) === "GuzzleHttp\Psr7\Request") {
+            $response = $this->service->getClient()->execute($responseOrRequest,
+                'Google_Service_Gmail_ListMessagesResponse');
+
+            return $response;
+        }
+
+        return $responseOrRequest;
     }
 
     /**
@@ -128,6 +105,30 @@ class Message
         }
 
         return $messages;
+    }
+
+    /**
+     * @param $id
+     *
+     * @return \Google_Service_Gmail_Message
+     */
+    private function getRequest($id)
+    {
+        return $this->service->users_messages->get('me', $id);
+    }
+
+    /**
+     * Preload the information on each Mail objects.
+     * If is not preload you will have to call the load method from the Mail class
+     * @return $this
+     * @see Mail::load()
+     *
+     */
+    public function preload()
+    {
+        $this->preload = true;
+
+        return $this;
     }
 
 }

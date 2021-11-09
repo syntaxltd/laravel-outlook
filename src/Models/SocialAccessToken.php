@@ -1,6 +1,6 @@
 <?php
 
-namespace Syntax\LaravelOutlook\Models;
+namespace Syntax\LaravelSocialIntegration\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

@@ -9,19 +9,19 @@
 		}
 	],
 	"require": {
-        "google/apiclient": "^2.5",
+		"google/apiclient": "^2.5",
 		"league/oauth2-client": "dev-master",
 		"microsoft/microsoft-graph": "dev-dev"
 	},
 	"autoload": {
 		"psr-4": {
-			"Syntax\\LaravelOutlook\\": "src/"
+			"Syntax\\LaravelSocialIntegration\\": "src/"
 		}
 	},
 	"extra": {
 		"laravel": {
 			"providers": [
-				"Syntax\\LaravelOutlook\\LaravelOutlookServiceProvider"
+				"Syntax\\LaravelSocialIntegration\\LaravelSocialIntegrationServiceProvider"
 			]
 		}
 	},

@@ -1,6 +1,6 @@
 <?php
 
-namespace Syntax\LaravelOutlook\Exceptions;
+namespace Syntax\LaravelSocialIntegration\Exceptions;
 
 use Exception;
 

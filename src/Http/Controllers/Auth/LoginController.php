@@ -1,9 +1,11 @@
 <?php
 
-namespace Syntax\LaravelOutlook\Http\Controllers\Auth;
+namespace Syntax\LaravelSocialIntegration\Http\Controllers\Auth;
 
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Redirector;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
 use Microsoft\Graph\Graph;
@@ -30,7 +32,7 @@ class LoginController extends Controller
     /**
      * @throws Throwable
      */
-    public function callback(Request $request)
+    public function callback(Request $request): Redirector|Application|RedirectResponse
     {
         // Validate the state
         $expectedState = session('oauthState');
@@ -77,7 +79,7 @@ class LoginController extends Controller
             ->with('errorDetail', $request->query('error_description'));
     }
 
-    public function logout()
+    public function logout(): Redirector|Application|RedirectResponse
     {
         app('laravel-outlook')->clearTokens();
 

@@ -1,9 +1,9 @@
 <?php
 
 
-namespace Dytechltd\LaravelOutlook\Services;
+namespace Dytechltd\LaravelSocialIntegration\Services;
 
-use Dytechltd\LaravelOutlook\LaravelGmail;
+use Dytechltd\LaravelSocialIntegration\LaravelGmail;
 use Google_Service_Gmail;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -83,7 +83,7 @@ class Mail extends LaravelGmail
      *
      * @param \Google_Service_Gmail_Message $message
      * @param bool $preload
-     * @param  int 	$userId
+     * @param int $userId
      */
     public function __construct(\Google_Service_Gmail_Message $message = null, $preload = false, $userId = null)
     {
@@ -135,15 +135,6 @@ class Mail extends LaravelGmail
         $this->subject = $this->getSubject();
         $this->body = $this->getBody();
     }
-    /**
-     * Returns ID of the email
-     *
-     * @return string
-     */
-    public function getId()
-    {
-        return $this->id;
-    }
 
     /**
      * Returns array list of recipients
@@ -157,43 +148,12 @@ class Mail extends LaravelGmail
         return $this->formatEmailList($allTo);
     }
 
-
-    /**
-     * Returns array of name and email of each recipient
-     *
-     * @param string|null $email
-     * @return array
-     */
-    public function getFrom($email = null)
-    {
-        $from = $email ? $email : $this->getHeader('From');
-
-        preg_match('/<(.*)>/', $from, $matches);
-
-        $name = preg_replace('/ <(.*)>/', '', $from);
-
-        return [
-            'name'  => $name,
-            'email' => isset($matches[1]) ? $matches[1] : null,
-        ];
-    }
-
-    /**
-     * Returns the subject of the email
-     *
-     * @return string
-     */
-    public function getSubject()
-    {
-        return $this->getHeader('Subject');
-    }
-
     /**
      * Gets a single header from an existing email by name.
      *
      * @param $headerName
      *
-     * @param  string  $regex  if this is set, value will be evaluated with the give regular expression.
+     * @param string $regex if this is set, value will be evaluated with the give regular expression.
      *
      * @return null|string
      */
@@ -230,6 +190,29 @@ class Mail extends LaravelGmail
         return $this->buildHeaders($this->payload->getHeaders());
     }
 
+    /**
+     * Gets all the headers from an email and returns a collections
+     *
+     * @param $emailHeaders
+     * @return Collection
+     */
+    private function buildHeaders($emailHeaders): Collection
+    {
+        $headers = [];
+
+        foreach ($emailHeaders as $header) {
+            /** @var \Google_Service_Gmail_MessagePartHeader $header */
+
+            $head = new \stdClass();
+
+            $head->key = $header->getName();
+            $head->value = $header->getValue();
+
+            $headers[] = $head;
+        }
+
+        return collect($headers);
+    }
 
     /**
      * Returns an array of emails from an string in RFC 822 format
@@ -267,27 +250,33 @@ class Mail extends LaravelGmail
     }
 
     /**
-     * Gets all the headers from an email and returns a collections
+     * Returns array of name and email of each recipient
      *
-     * @param $emailHeaders
-     * @return Collection
+     * @param string|null $email
+     * @return array
      */
-    private function buildHeaders($emailHeaders): Collection
+    public function getFrom($email = null)
     {
-        $headers = [];
+        $from = $email ? $email : $this->getHeader('From');
 
-        foreach ($emailHeaders as $header) {
-            /** @var \Google_Service_Gmail_MessagePartHeader $header */
+        preg_match('/<(.*)>/', $from, $matches);
 
-            $head = new \stdClass();
+        $name = preg_replace('/ <(.*)>/', '', $from);
 
-            $head->key = $header->getName();
-            $head->value = $header->getValue();
+        return [
+            'name' => $name,
+            'email' => isset($matches[1]) ? $matches[1] : null,
+        ];
+    }
 
-            $headers[] = $head;
-        }
-
-        return collect($headers);
+    /**
+     * Returns the subject of the email
+     *
+     * @return string
+     */
+    public function getSubject()
+    {
+        return $this->getHeader('Subject');
     }
 
     /**
@@ -320,5 +309,15 @@ class Mail extends LaravelGmail
         }
 
         return null;
+    }
+
+    /**
+     * Returns ID of the email
+     *
+     * @return string
+     */
+    public function getId()
+    {
+        return $this->id;
     }
 }

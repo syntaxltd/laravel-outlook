@@ -1,6 +1,6 @@
 <?php
 
-namespace Syntax\LaravelOutlook\Facades;
+namespace Syntax\LaravelSocialIntegration\Facades;
 
 use Illuminate\Support\Facades\Facade;
 use RuntimeException;
