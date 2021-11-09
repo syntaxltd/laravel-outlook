@@ -3,6 +3,7 @@
 namespace Syntax\LaravelOutlook;
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\ServiceProvider;
 use Safe\Exceptions\DatetimeException;
 use function Safe\date;
