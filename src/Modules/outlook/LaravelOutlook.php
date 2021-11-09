@@ -1,6 +1,6 @@
 <?php
 
-namespace Syntax\LaravelSocialIntegration\Modules\Outlook;
+namespace Syntax\LaravelSocialIntegration\Modules\outlook;
 
 class LaravelOutlook
 {

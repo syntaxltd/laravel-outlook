@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Syntax\LaravelSocialIntegration\Modules\Gmail;
+namespace Syntax\LaravelSocialIntegration\Modules\gmail;
 
 use Carbon\Carbon;
 use Google_Client;

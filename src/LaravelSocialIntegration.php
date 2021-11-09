@@ -8,8 +8,8 @@ use League\OAuth2\Client\Token\AccessToken;
 use Microsoft\Graph\Graph;
 use Microsoft\Graph\Model\User;
 use Syntax\LaravelSocialIntegration\Exceptions\InvalidClientException;
-use Syntax\LaravelSocialIntegration\Modules\Gmail\LaravelGmail;
-use Syntax\LaravelSocialIntegration\Modules\Outlook\LaravelOutlook;
+use Syntax\LaravelSocialIntegration\Modules\gmail\LaravelGmail;
+use Syntax\LaravelSocialIntegration\Modules\outlook\LaravelOutlook;
 use Throwable;
 
 class LaravelSocialIntegration
