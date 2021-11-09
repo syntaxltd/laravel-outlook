@@ -32,16 +32,6 @@ class LaravelSocialIntegration
     }
 
     /**
-     * Get microsoft generic provider.
-     *
-     * @return GenericProvider
-     */
-    public function getOAuthClient(): GenericProvider
-    {
-
-    }
-
-    /**
      * Save received access tokens from social account.
      *
      * @param AccessToken $accessToken

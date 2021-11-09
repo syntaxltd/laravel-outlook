@@ -29,6 +29,7 @@ class LoginController extends Controller
     public function callback(Request $request, string $client): Redirector|Application|RedirectResponse
     {
         LaravelSocialIntegration::service($client)->auth()->storeToken($request);
+
         return redirect('/');
     }
 

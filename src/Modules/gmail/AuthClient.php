@@ -5,7 +5,6 @@ namespace Syntax\LaravelSocialIntegration\Modules\gmail;
 
 use Carbon\Carbon;
 use Exception;
-use Google\Service\Gmail;
 use Google_Service_Gmail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -44,30 +43,29 @@ class AuthClient extends \Google_Client implements SocialClientAuth
      */
     public function storeToken(Request $request): void
     {
-            $code = (string) $request->input('code', null);
-            if (!is_null($code) && !empty($code)) {
-                $accessToken = $this->fetchAccessTokenWithAuthCode($code);
-                if($this->haveReadScope()) {
-                    $service = new Google_Service_Gmail($this);
-                    $me = $service->users->getProfile('me');
+        $code = (string) $request->input('code', null);
+        if (!is_null($code) && !empty($code)) {
+            $accessToken = $this->fetchAccessTokenWithAuthCode($code);
+            if ($this->haveReadScope()) {
+                $service = new Google_Service_Gmail($this);
+                $me = $service->users->getProfile('me');
 
-                    if (property_exists($me, 'emailAddress')) {
-                        $accessToken['email'] = $me->emailAddress;
-                    }
+                if (property_exists($me, 'emailAddress')) {
+                    $accessToken['email'] = $me->emailAddress;
                 }
-                parent::setAccessToken($accessToken);
-
-                SocialAccessToken::updateOrCreate(
-                    ['partner_user_id' => Auth::id()],
-                    [
-                        'access_token' => $accessToken['access_token'],
-                        'refresh_token' => $accessToken['refresh_token'],
-                        'expires_at' => Carbon::parse(now())->addSeconds($accessToken['expires_in'])
-                    ]);
-
-            } else {
-                throw new Exception('No access token');
             }
+            parent::setAccessToken($accessToken);
+
+            SocialAccessToken::query()->updateOrCreate(
+                ['partner_user_id' => Auth::id()],
+                [
+                    'access_token' => $accessToken['access_token'],
+                    'refresh_token' => $accessToken['refresh_token'],
+                    'expires_at' => Carbon::parse(now())->addSeconds($accessToken['expires_in'])
+                ]);
+        } else {
+            throw new Exception('No access token');
+        }
 
     }
 }
