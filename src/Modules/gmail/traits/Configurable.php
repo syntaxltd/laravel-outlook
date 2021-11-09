@@ -11,11 +11,6 @@ use Illuminate\Support\Arr;
  */
 trait Configurable
 {
-
-    public function __construct()
-    {
-    }
-
     /**
      * @return array
      */

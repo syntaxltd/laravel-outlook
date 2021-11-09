@@ -8,9 +8,7 @@ use Syntax\LaravelSocialIntegration\Modules\gmail\traits\Configurable;
 
 class AuthClient extends \Google_Client implements SocialClientAuth
 {
-    use Configurable {
-        Configurable::__construct as configConstruct;
-    }
+    use Configurable;
 
     public function __construct()
     {
