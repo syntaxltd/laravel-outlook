@@ -14,7 +14,7 @@ trait Configurable
     /**
      * @return array
      */
-    public function getConfig()
+    public function getConfigs()
     {
         return [
             'client_secret' => config('laravel-social-integration.services.gmail.client_secret'),
@@ -37,6 +37,14 @@ trait Configurable
     }
 
     public abstract function setScopes($scopes);
+
+
+    private function haveReadScope()
+    {
+        $scopes = $this->getUserScopes();
+
+        return in_array(Google_Service_Gmail::GMAIL_READONLY, $scopes);
+    }
 
     private function getUserScopes(): array
     {

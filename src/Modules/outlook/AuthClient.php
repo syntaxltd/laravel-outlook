@@ -2,6 +2,7 @@
 
 namespace Syntax\LaravelSocialIntegration\Modules\outlook;
 
+use Illuminate\Http\Request;
 use League\OAuth2\Client\Provider\GenericProvider;
 use Syntax\LaravelSocialIntegration\Contracts\SocialClientAuth;
 
@@ -14,7 +15,7 @@ class AuthClient implements SocialClientAuth
 
     public function getOAuthClient(): GenericProvider
     {
-        $client = new GenericProvider($this->getConfig());
+        $client = new GenericProvider($this->getConfigs());
 
         // Save client state so we can validate in callback
         session(['oauthState' => $client->getState()]);
@@ -25,7 +26,7 @@ class AuthClient implements SocialClientAuth
     /**
      * @return array
      */
-    public function getConfig(): array
+    public function getConfigs(): array
     {
         return [
             'clientId' => config('laravel-social-integration.services.outlook.appId'),
@@ -36,5 +37,10 @@ class AuthClient implements SocialClientAuth
             'urlResourceOwnerDetails' => '',
             'scopes' => config('laravel-social-integration.services.outlook.scopes')
         ];
+    }
+
+    public function storeToken(Request $request): void
+    {
+        // TODO: Implement storeToken() method.
     }
 }
