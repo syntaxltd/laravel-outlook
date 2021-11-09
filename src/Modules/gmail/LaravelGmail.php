@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Syntax\LaravelSocialIntegration;
+namespace Syntax\LaravelSocialIntegration\Modules\Gmail;
 
 use Carbon\Carbon;
 use Google_Client;
@@ -116,6 +116,7 @@ class LaravelGmail extends Google_Client
     public function getOAuthClient(): string
     {
         $this->setState(base64_encode($this->userId));
+
         return $this->createAuthUrl();
     }
 

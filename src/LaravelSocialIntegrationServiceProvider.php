@@ -47,8 +47,8 @@ class LaravelSocialIntegrationServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->bind('laravel-social', function ($app) {
-            return new LaravelSocialIntegration();
+        $this->app->bind('laravel-social', function ($app, $client) {
+            return LaravelSocialIntegration::service($client['client']);
         });
         $this->mapWebRoutes();
     }

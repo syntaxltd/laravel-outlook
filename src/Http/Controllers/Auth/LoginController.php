@@ -12,13 +12,20 @@ use Microsoft\Graph\Graph;
 use Microsoft\Graph\Model\User;
 use Syntax\LaravelSocialIntegration\Exceptions\InvalidStateException;
 use Syntax\LaravelSocialIntegration\Http\Controllers\Controller;
+use Syntax\LaravelSocialIntegration\LaravelSocialIntegration;
 use Throwable;
 
 class LoginController extends Controller
 {
-    public function login(): RedirectResponse
+    public function login(string $client)
     {
-        $oauthClient = app('laravel-outlook')->getOAuthClient();
+        dd(LaravelSocialIntegration::service($client)->getOAuthClient());
+//        dd(app('laravel-social', ['client' => $client])->getOAuthClient());
+
+//        app('storage');
+//        Storage::disk('local');
+
+        $oauthClient = app('laravel-social', ['client' => $client])->getOAuthClient();
 
         $authUrl = $oauthClient->getAuthorizationUrl();
 
@@ -26,7 +33,7 @@ class LoginController extends Controller
         session(['oauthState' => $oauthClient->getState()]);
 
         // Redirect to AAD sign in page
-        return redirect()->away($authUrl);
+//        return redirect()->away($authUrl);
     }
 
     /**
