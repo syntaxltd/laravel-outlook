@@ -24,7 +24,7 @@ class MailController extends Controller
      */
     public function create(Request $request,string $client): Application|RedirectResponse|Redirector
     {
-        dd(LaravelSocialIntegration::service($client)->messages()->send());
+        dd(LaravelSocialIntegration::service($client)->messages()->send($request));
         return redirect()->back()->with('status', 'Email has been sent');
     }
 }
