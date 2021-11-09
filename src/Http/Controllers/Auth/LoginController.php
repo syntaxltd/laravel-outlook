@@ -17,23 +17,15 @@ use Throwable;
 
 class LoginController extends Controller
 {
+    /**
+     * @throws Throwable
+     */
     public function login(string $client)
     {
-        dd(LaravelSocialIntegration::service($client)->getOAuthClient());
-//        dd(app('laravel-social', ['client' => $client])->getOAuthClient());
-
-//        app('storage');
-//        Storage::disk('local');
-
-        $oauthClient = app('laravel-social', ['client' => $client])->getOAuthClient();
-
-        $authUrl = $oauthClient->getAuthorizationUrl();
-
-        // Save client state so we can validate in callback
-        session(['oauthState' => $oauthClient->getState()]);
+        $authUrl = LaravelSocialIntegration::service($client)->auth()->getAuthorizationUrl();
 
         // Redirect to AAD sign in page
-//        return redirect()->away($authUrl);
+        return redirect()->away($authUrl);
     }
 
     /**
