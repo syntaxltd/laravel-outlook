@@ -38,6 +38,14 @@ trait Configurable
 
     public abstract function setScopes($scopes);
 
+
+    private function haveReadScope()
+    {
+        $scopes = $this->getUserScopes();
+
+        return in_array(Google_Service_Gmail::GMAIL_READONLY, $scopes);
+    }
+
     private function getUserScopes(): array
     {
         return $this->mapScopes();
