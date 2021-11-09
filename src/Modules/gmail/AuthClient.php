@@ -61,7 +61,7 @@ class AuthClient extends \Google_Client implements SocialClientAuth
             }
     }
 
-    public function logout(): void
+    public function clearTokens(): void
     {
         $this->revokeToken();
 
