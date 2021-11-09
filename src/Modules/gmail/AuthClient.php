@@ -12,7 +12,7 @@ class AuthClient extends \Google_Client implements SocialClientAuth
 
     public function __construct()
     {
-        parent::__construct($this->getConfigs());
+        parent::__construct($this->getConfig());
 
         $this->configApi();
     }

@@ -14,7 +14,7 @@ trait Configurable
     /**
      * @return array
      */
-    public function getConfigs()
+    public function getConfig()
     {
         return [
             'client_secret' => config('laravel-social-integration.services.gmail.client_secret'),
