@@ -27,7 +27,7 @@ class LaravelSocialIntegrationServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->publishes([
-            __DIR__ . '/../config/azure.php' => config_path('azure.php'),
+            __DIR__ . '/../config/laravel-social-integration.php' => config_path('laravel-social-integration.php'),
         ]);
 
         if ($this->app->runningInConsole()) {
@@ -47,8 +47,8 @@ class LaravelSocialIntegrationServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->bind('laravel-outlook', function ($app) {
-            return new LaravelOutlook();
+        $this->app->bind('laravel-social', function ($app) {
+            return new LaravelSocialIntegration();
         });
         $this->mapWebRoutes();
     }
