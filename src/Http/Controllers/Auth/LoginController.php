@@ -20,7 +20,7 @@ class LoginController extends Controller
     /**
      * @throws Throwable
      */
-    public function login(string $client)
+    public function login(string $client): RedirectResponse
     {
         $authUrl = LaravelSocialIntegration::service($client)->auth()->getAuthorizationUrl();
 
