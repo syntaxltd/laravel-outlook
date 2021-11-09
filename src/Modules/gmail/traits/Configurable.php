@@ -1,36 +1,19 @@
 <?php
 
-namespace Syntax\LaravelSocialIntegration\Traits;
+namespace Syntax\LaravelSocialIntegration\Modules\gmail\traits;
 
 use Google_Service_Gmail;
 use Illuminate\Support\Arr;
-use Syntax\LaravelSocialIntegration\Models\SocialAccessToken;
 
 /**
  * Trait Configurable
- * @package Dytechltd\LaravelOutlook\Traits
+ * @package Syntax\LaravelSocialIntegration\Traits
  */
 trait Configurable
 {
 
-    protected $additionalScopes = [];
-    private $_config;
-
-    public function __construct($config)
+    public function __construct()
     {
-        $this->_config = $config;
-    }
-
-    public function config($string = null)
-    {
-        $config = SocialAccessToken::where('partner_user_id', $this->userId)->get()->toArray();
-        if ($string) {
-            if (isset($config[$string])) {
-                return $config[$string];
-            }
-        } else {
-            return $config;
-        }
     }
 
     /**
@@ -44,13 +27,6 @@ trait Configurable
             'redirect_uri' => url(config('laravel-social-integration.services.gmail.redirect_url')),
             'state' => config('laravel-social-integration.services.gmail.state') ?? null,
         ];
-    }
-
-    public function setAdditionalScopes(array $scopes): static
-    {
-        $this->additionalScopes = $scopes;
-
-        return $this;
     }
 
     private function configApi()
