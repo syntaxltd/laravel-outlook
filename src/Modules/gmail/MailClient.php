@@ -9,15 +9,56 @@ use Swift_Message;
 use Syntax\LaravelSocialIntegration\Contracts\SocialClient;
 use Syntax\LaravelSocialIntegration\Models\SocialAccessToken;
 use Syntax\LaravelSocialIntegration\Modules\gmail\traits\Configurable;
+use Syntax\LaravelSocialIntegration\Modules\gmail\traits\SendMail;
 
 class MailClient extends \Google_Client implements SocialClient
 {
 
     use Configurable;
+    use SendMail;
+
+    /**
+     * @var
+     */
+    public $id;
+
+    /**
+     * @var
+     */
+    public $userId;
+
+    /**
+     * @var
+     */
+    public $internalDate;
+
+    /**
+     * @var
+     */
+    public $labels;
+
+    /**
+     * @var
+     */
+    public $size;
+
+    /**
+     * @var
+     */
+    public $threadId;
+
+    /**
+     * @var
+     */
+    public $historyId;
+
+    /**
+     * @var \Google_Service_Gmail_MessagePart
+     */
+    public $payload;
 
     protected string $emailAddress;
     public Google_Service_Gmail $service;
-    private Swift_Message $swiftMessage;
 
     public function __construct()
     {
@@ -29,8 +70,6 @@ class MailClient extends \Google_Client implements SocialClient
             $this->refreshTokenIfNeeded();
         }
         $this->service = new Google_Service_Gmail($this);
-
-        $this->swiftMessage = new Swift_Message();
     }
 
     /**
@@ -65,11 +104,6 @@ class MailClient extends \Google_Client implements SocialClient
         return $token;
     }
 
-    public function send(Request $request)
-    {
-        $this->service->users_messages->send('me', $request->all(), []);
-    }
-
     /**
      * @param int $id
      *
@@ -79,5 +113,35 @@ class MailClient extends \Google_Client implements SocialClient
     {
         return $this->service->users_messages->get('me', $id);
     }
+    /**
+     * Sends a new email
+     *
+     * @return self
+     */
+    public function send(Request $request): static
+    {
+        $this->to($request->input('to'));
+        $this->from($request->input('from'));
+        $this->cc($request->input('cc'));
+        $this->bcc($request->input('bcc'));
+        $this->subject($request->input('subject'));
+        $this->message($request->input('message'));
+        $this->sendMail();
 
+        return $this;
+    }
+
+    protected function setMessage(\Google_Service_Gmail_Message $message)
+    {
+        $this->id = $message->getId();
+        $this->internalDate = $message->getInternalDate();
+        $this->labels = $message->getLabelIds();
+        $this->size = $message->getSizeEstimate();
+        $this->threadId = $message->getThreadId();
+        $this->historyId = $message->getHistoryId();
+        $this->payload = $message->getPayload();
+        if ($this->payload) {
+            $this->parts = collect($this->payload->getParts());
+        }
+    }
 }
