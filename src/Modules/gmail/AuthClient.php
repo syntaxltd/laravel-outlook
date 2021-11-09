@@ -19,7 +19,7 @@ class AuthClient extends \Google_Client implements SocialClientAuth
 
     public function __construct()
     {
-        parent::__construct($this->getConfig());
+        parent::__construct($this->getConfigs());
 
         $this->configApi();
     }
@@ -52,7 +52,6 @@ class AuthClient extends \Google_Client implements SocialClientAuth
                     $me = $service->users->getProfile('me');
 
                     if (property_exists($me, 'emailAddress')) {
-                        $this->emailAddress = $me->emailAddress;
                         $accessToken['email'] = $me->emailAddress;
                     }
                 }
