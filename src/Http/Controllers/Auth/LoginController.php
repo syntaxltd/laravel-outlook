@@ -17,12 +17,16 @@ use Throwable;
 
 class LoginController extends Controller
 {
+
     /**
+     * Redirect to provider oauth
+     *
+     * @return Application|RedirectResponse|Redirector
      * @throws Throwable
      */
-    public function login(string $client)
+    public function login(string $client): Redirector|RedirectResponse|Application
     {
-        $authUrl = LaravelSocialIntegration::service($client)->auth()->getAuthorizationUrl();
+        $authUrl = LaravelSocialIntegration::service($client)->auth()->getOAuthClient();
 
         // Redirect to AAD sign in page
         return redirect()->away($authUrl);

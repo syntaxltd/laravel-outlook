@@ -3,37 +3,17 @@
 
 namespace Syntax\LaravelSocialIntegration\Modules\gmail;
 
-
-use App\Models\PartnerUser;
 use Carbon\Carbon;
 use Google_Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Syntax\LaravelSocialIntegration\Models\SocialAccessToken;
-use Syntax\LaravelSocialIntegration\Modules\gmail\traits\Configurable;
 
 class LaravelGmail extends Google_Client
 {
-    use Configurable {
-        Configurable::__construct as configConstruct;
-    }
-    protected $token;
-
-    public function __construct()
+    public function auth(): AuthClient
     {
-        parent::__construct($this->getConfigs());
-
-        $this->configApi();
-    }
-
-    /**
-     * Gets the URL to authorize the user
-     *
-     * @return string
-     */
-    public function getOAuthClient()
-    {
-        return $this->createAuthUrl();
+        return new AuthClient();
     }
     /**
      * @return array|string
