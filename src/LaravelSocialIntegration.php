@@ -7,9 +7,30 @@ use League\OAuth2\Client\Provider\GenericProvider;
 use League\OAuth2\Client\Token\AccessToken;
 use Microsoft\Graph\Graph;
 use Microsoft\Graph\Model\User;
+use Syntax\LaravelSocialIntegration\Exceptions\InvalidClientException;
+use Syntax\LaravelSocialIntegration\Modules\Gmail\LaravelGmail;
+use Syntax\LaravelSocialIntegration\Modules\Outlook\LaravelOutlook;
+use Throwable;
 
 class LaravelSocialIntegration
 {
+    /**
+     * @param string $client
+     * @return mixed
+     * @throws Throwable
+     */
+    public static function service(string $client): mixed
+    {
+        throw_if(!in_array($client, config('laravel-social-integration.default')), new InvalidClientException);
+
+        $services = [
+            'gmail' => LaravelGmail::class,
+            'outlook' => LaravelOutlook::class,
+        ];
+
+        return new $services[$client];
+    }
+
     /**
      * Get microsoft generic provider.
      *

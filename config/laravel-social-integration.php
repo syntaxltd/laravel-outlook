@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'default' => ['gmail', 'outlook'],
+
     'services' => [
         'outlook' => [
             'appId' => env('OAUTH_APP_ID', null),
