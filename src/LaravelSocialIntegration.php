@@ -2,7 +2,6 @@
 
 namespace Syntax\LaravelSocialIntegration;
 
-use Microsoft\Graph\Graph;
 use Syntax\LaravelSocialIntegration\Exceptions\InvalidClientException;
 use Syntax\LaravelSocialIntegration\Modules\gmail\LaravelGmail;
 use Syntax\LaravelSocialIntegration\Modules\outlook\LaravelOutlook;
@@ -10,11 +9,6 @@ use Throwable;
 
 class LaravelSocialIntegration
 {
-    public function getGraphClient(): Graph
-    {
-        return (new Graph)->setAccessToken(self::service('outlook')->getAccessToken());
-    }
-
     /**
      * @param string $client
      * @return mixed
