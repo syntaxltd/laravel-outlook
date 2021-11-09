@@ -3,16 +3,12 @@
 
 namespace Syntax\LaravelSocialIntegration\Http\Controllers;
 
-use Syntax\LaravelSocialIntegration\Http\Controllers\Controller;
-use App\Models\CentralPartnerUser;
 use App\Models\PartnerUser;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Redirector;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class GmailController extends Controller
@@ -37,6 +33,7 @@ class GmailController extends Controller
             'messages' => (new LaravelGmail())->setUserId($partner->global_id)->getMessages()->unread()->preload()->all()
         ]);
     }
+
     /**
      * Add the 'TRASH' label to the email.
      *
@@ -74,6 +71,7 @@ class GmailController extends Controller
             return redirect()->back()->with('status', 'Email could not update');
         }
     }
+
     /**
      * Add the 'UNREAD' label to the email.
      *
@@ -91,6 +89,7 @@ class GmailController extends Controller
             return redirect()->back()->with('status', 'Email could not update');
         }
     }
+
     /**
      * Display a specific email details.
      *

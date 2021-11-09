@@ -14,7 +14,20 @@ class AuthClient implements SocialClientAuth
 
     public function getOAuthClient(): GenericProvider
     {
-        $client = new GenericProvider([
+        $client = new GenericProvider($this->getConfig());
+
+        // Save client state so we can validate in callback
+        session(['oauthState' => $client->getState()]);
+
+        return $client;
+    }
+
+    /**
+     * @return array
+     */
+    public function getConfig(): array
+    {
+        return [
             'clientId' => config('laravel-social-integration.services.outlook.appId'),
             'clientSecret' => config('laravel-social-integration.services.outlook.appSecret'),
             'redirectUri' => config('laravel-social-integration.services.outlook.redirectUri'),
@@ -22,11 +35,6 @@ class AuthClient implements SocialClientAuth
             'urlAccessToken' => config('laravel-social-integration.services.outlook.authority') . config('laravel-social-integration.services.outlook.tokenEndpoint'),
             'urlResourceOwnerDetails' => '',
             'scopes' => config('laravel-social-integration.services.outlook.scopes')
-        ]);
-
-        // Save client state so we can validate in callback
-        session(['oauthState' => $client->getState()]);
-
-        return $client;
+        ];
     }
 }
