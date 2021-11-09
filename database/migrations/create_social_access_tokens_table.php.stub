@@ -18,7 +18,7 @@ class CreateSocialAccessTokensTable extends Migration
             $table->string('access_token');
             $table->string('refresh_token')->nullable();
             $table->string('type')->nullable();
-            $table->dateTime('expires_at')->nullable();
+            $table->integer('expires_in')->nullable();
             $table->timestamps();
         });
     }

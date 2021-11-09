@@ -9,4 +9,6 @@ interface SocialClientAuth
     public function getOAuthClient(): mixed;
 
     public function storeToken(Request $request): void;
+
+    public function logout(): void;
 }
