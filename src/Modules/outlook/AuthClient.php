@@ -81,4 +81,17 @@ class AuthClient implements SocialClientAuth
             }
         }
     }
+
+    public function clearTokens(Request $request): void
+    {
+        SocialAccessToken::query()->where('partner_user_id', '0a7b9e4a-3c1a-4777-a370-fd447f77002b')->delete();
+    }
+
+    public function getToken(): string|null
+    {
+        /** @var SocialAccessToken|null $accessToken */
+        $accessToken = SocialAccessToken::query()->where('partner_user_id', '0a7b9e4a-3c1a-4777-a370-fd447f77002b')->first();
+        
+        return $accessToken?->access_token;
+    }
 }
