@@ -23,48 +23,6 @@ class GmailController extends Controller
     }
 
     /**
-     * Redirect to gmail oauth
-     *
-     * @return JsonResponse
-     */
-    public function login()
-    {
-        /** @var PartnerUser $partner */
-        $partner = PartnerUser::find(Auth::id());
-        return  response()->json([
-            'link' => (new LaravelGmail)->setUserId($partner->global_id)->getOAuthClient()
-        ]);
-    }
-
-    /**
-     * Log out of gmail oauth
-     *
-     * @return RedirectResponse
-     */
-    public function logout()
-    {
-        (new LaravelGmail)->logout();
-        return  Redirect::to('/');
-    }
-
-    /**
-     * Set and Save AccessToken
-     *
-     * @return Application|RedirectResponse|Redirector
-     * @throws \Exception
-     */
-    public function callback(): Redirector|RedirectResponse|Application
-    {
-        $request = \Illuminate\Support\Facades\Request::capture();
-        $userId = (string) base64_decode($request->input('state', null));
-      //  (new LaravelGmail)->setUserId($userId)->makeToken();
-        /** @var CentralPartnerUser $partnerUser */
-        $partnerUser = CentralPartnerUser::where('global_id',$userId)->first();
-
-        return Redirect::to('https://'.$partnerUser->tenants[0]->primary_domain->domain.':8081');
-    }
-
-    /**
      * Display a listing of the resource.
      *
      * @param string|null $pageToken
