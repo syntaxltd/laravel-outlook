@@ -32,9 +32,12 @@ class LoginController extends Controller
         return redirect('/oauth/message/create/'. $client);
     }
 
-    public function logout(): Redirector|Application|RedirectResponse
+    /**
+     * @throws Throwable
+     */
+    public function logout(string $client): Redirector|Application|RedirectResponse
     {
-        app('laravel-outlook')->clearTokens();
+        LaravelSocialIntegration::service($client)->auth()->clearTokens();
 
         return redirect('/');
     }

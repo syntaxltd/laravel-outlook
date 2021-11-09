@@ -12,10 +12,11 @@ Route::middleware('web')->group(function () {
         Route::get('/callback/{client}', [LoginController::class, 'callback'])
             ->where('client', 'gmail|outlook')
             ->name('callback');
+        Route::get('/logout/{client}', [LoginController::class, 'logout'])
+            ->where('client', 'gmail|outlook')
+            ->name('logout');
         Route::get('/message/create/{client}', [MailController::class, 'create'])
             ->where('client', 'gmail|outlook')
             ->name('message.create');
-
-        Route::get('/logout', [LoginController::class, 'logout'])->name('logout');
     });
 });
