@@ -1,8 +1,8 @@
 <?php
 
-namespace Dytechltd\LaravelSocialIntegration\Traits;
+namespace Syntax\LaravelSocialIntegration\Traits;
 
-use Dytechltd\LaravelSocialIntegration\Services\Message;
+use Syntax\LaravelSocialIntegration\Services\Message;
 
 trait Filterable
 {

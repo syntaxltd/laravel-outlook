@@ -1,11 +1,11 @@
 <?php
 
-namespace Dytechltd\LaravelSocialIntegration\Services;
+namespace Syntax\LaravelSocialIntegration\Services;
 
-use Dytechltd\LaravelSocialIntegration\LaravelGmail;
-use Dytechltd\LaravelSocialIntegration\Traits\Filterable;
-use Dytechltd\LaravelSocialIntegration\Traits\SendsParameters;
 use Google_Service_Gmail;
+use Syntax\LaravelSocialIntegration\LaravelGmail;
+use Syntax\LaravelSocialIntegration\Traits\Filterable;
+use Syntax\LaravelSocialIntegration\Traits\SendsParameters;
 
 class Message
 {

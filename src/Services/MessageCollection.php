@@ -1,6 +1,6 @@
 <?php
 
-namespace Dytechltd\LaravelSocialIntegration\Services;
+namespace Syntax\LaravelSocialIntegration\Services;
 
 use Illuminate\Support\Collection;
 

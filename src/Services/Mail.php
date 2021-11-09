@@ -1,12 +1,12 @@
 <?php
 
 
-namespace Dytechltd\LaravelSocialIntegration\Services;
+namespace Syntax\LaravelSocialIntegration\Services;
 
-use Dytechltd\LaravelSocialIntegration\LaravelGmail;
 use Google_Service_Gmail;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Syntax\LaravelSocialIntegration\LaravelGmail;
 
 class Mail extends LaravelGmail
 {

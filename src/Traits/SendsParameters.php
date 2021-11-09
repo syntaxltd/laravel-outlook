@@ -1,6 +1,6 @@
 <?php
 
-namespace Dytechltd\LaravelSocialIntegration\Traits;
+namespace Syntax\LaravelSocialIntegration\Traits;
 
 use Illuminate\Support\Arr;
 

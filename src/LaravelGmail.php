@@ -1,18 +1,18 @@
 <?php
 
 
-namespace Dytechltd\LaravelSocialIntegration;
+namespace Syntax\LaravelSocialIntegration;
 
 use Carbon\Carbon;
-use Dytechltd\LaravelOutlook\Exceptions\InvalidStateException;
-use Dytechltd\LaravelOutlook\Models\SocialAccessToken;
-use Dytechltd\LaravelOutlook\Services\Message;
-use Dytechltd\LaravelOutlook\Traits\Configurable;
 use Google_Client;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Support\Facades\Request;
 use Safe\file_get_contents;
 use Safe\json_decode;
+use Syntax\LaravelSocialIntegration\Exceptions\InvalidStateException;
+use Syntax\LaravelSocialIntegration\Models\SocialAccessToken;
+use Syntax\LaravelSocialIntegration\Services\Message;
+use Syntax\LaravelSocialIntegration\Traits\Configurable;
 
 class LaravelGmail extends Google_Client
 {

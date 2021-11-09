@@ -1,6 +1,6 @@
 <?php
 
-namespace Dytechltd\LaravelSocialIntegration\Traits;
+namespace Syntax\LaravelSocialIntegration\Traits;
 
 use Dytechltd\LaravelOutlook\Models\SocialAccessToken;
 use Google_Service_Gmail;

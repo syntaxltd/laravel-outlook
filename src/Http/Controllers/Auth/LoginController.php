@@ -10,8 +10,8 @@ use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
 use Microsoft\Graph\Graph;
 use Microsoft\Graph\Model\User;
-use Syntax\LaravelOutlook\Exceptions\InvalidStateException;
-use Syntax\LaravelOutlook\Http\Controllers\Controller;
+use Syntax\LaravelSocialIntegration\Exceptions\InvalidStateException;
+use Syntax\LaravelSocialIntegration\Http\Controllers\Controller;
 use Throwable;
 
 class LoginController extends Controller
