@@ -5,6 +5,7 @@ namespace Syntax\LaravelSocialIntegration\Modules\gmail;
 
 use App\Models\PartnerUser;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Syntax\LaravelSocialIntegration\Contracts\SocialClientAuth;
 use Syntax\LaravelSocialIntegration\Exceptions\InvalidStateException;
@@ -36,7 +37,7 @@ class AuthClient extends \Google_Client implements SocialClientAuth
      */
     public function getOAuthClient(): string
     {
-        $this->setState(base64_encode(tenant('id')));
+        $this->setState(base64_encode(tenant('id').'/'. Auth::id()));
 
         return $this->createAuthUrl();
     }
@@ -46,26 +47,22 @@ class AuthClient extends \Google_Client implements SocialClientAuth
      */
     public function storeToken(Request $request): void
     {
+        Log::info('called');
         /** @var string|null $code */
         $code = $request->input('code');
 
         /** @var string|null $state */
         $state = base64_decode($request->input('state'));
-
         throw_if(is_null($code) || is_null($state), new InvalidStateException('No access token.'));
 
-        $accessToken = $this->fetchAccessTokenWithAuthCode($code);
-        parent::setAccessToken($accessToken);
-        Log::info('', [$accessToken]);
+         $values = explode("/", $state);
+         $accessToken = $this->fetchAccessTokenWithAuthCode($code);
 
+         parent::setAccessToken($accessToken);
         //Initialize tenant
-        tenancy()->initialize($state);
+        tenancy()->initialize($values[0]);
 
-        /**
-         * @var PartnerUser
-         */
-        $user = auth('partneruser')->user();
-        SocialAccessToken::query()->updateOrCreate(['partner_user_id' => $user->id], [
+        SocialAccessToken::query()->updateOrCreate(['partner_user_id' => $values[1]], [
             'access_token' => $accessToken['access_token'],
             'refresh_token' => $accessToken['refresh_token'],
             'expires_in' => $accessToken['expires_in'],
