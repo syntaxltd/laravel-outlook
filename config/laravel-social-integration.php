@@ -3,6 +3,12 @@
 return [
     'default' => ['gmail', 'outlook'],
 
+    'routes' => [
+        'prefix' => '',
+
+        'middleware' => ['web'],
+    ],
+
     'services' => [
         'outlook' => [
             'appId' => env('OAUTH_APP_ID', null),
@@ -44,5 +50,5 @@ return [
 
             'allow_json_encrypt' => env('GOOGLE_ALLOW_JSON_ENCRYPT', false),
         ],
-    ]
+    ],
 ];

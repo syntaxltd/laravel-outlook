@@ -50,7 +50,7 @@ class LaravelSocialIntegrationServiceProvider extends ServiceProvider
         $this->app->bind('laravel-social', function ($app, $client) {
             return LaravelSocialIntegration::service($client['client']);
         });
-      //  $this->mapWebRoutes();
+        $this->registerRoutes();
     }
 
     /**
@@ -60,10 +60,18 @@ class LaravelSocialIntegrationServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    protected function mapWebRoutes()
+    protected function registerRoutes()
     {
-        Route::middleware('web')
-            ->namespace($this->namespace)
-            ->group(__DIR__ . '/../routes/web.php');
+        Route::group($this->routeConfiguration(), function () {
+            $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
+        });
+    }
+
+    protected function routeConfiguration(): array
+    {
+        return [
+            'prefix' => config('laravel-social-integration.routes.prefix'),
+            'middleware' => config('laravel-social-integration.routes.middleware'),
+        ];
     }
 }

@@ -7,12 +7,6 @@ use Syntax\LaravelSocialIntegration\LaravelSocialIntegration;
 
 Route::middleware('web')->group(function () {
     Route::group(['prefix' => '/oauth', 'as' => 'oauth.'], function () {
-        Route::get('/login/{client}', [LoginController::class, 'login'])
-            ->where('client', 'gmail|outlook')
-            ->name('login');
-        Route::get('/callback/{client}', [LoginController::class, 'callback'])
-            ->where('client', 'gmail|outlook')
-            ->name('callback');
         Route::get('/logout/{client}', [LoginController::class, 'logout'])
             ->where('client', 'gmail|outlook')
             ->name('logout');
