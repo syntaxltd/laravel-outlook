@@ -11,6 +11,6 @@ interface SocialClientAuth
     public function storeToken(Request $request): void;
 
     public function clearTokens(): void;
-
-    public function getToken(): string|null;
+//
+//    public function getToken(): string|null;
 }

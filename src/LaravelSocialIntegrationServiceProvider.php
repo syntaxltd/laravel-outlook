@@ -34,7 +34,7 @@ class LaravelSocialIntegrationServiceProvider extends ServiceProvider
             // Export the migration
             if (!class_exists('CreateSocialAccessTokensTable')) {
                 $this->publishes([
-                    __DIR__ . '/../database/migrations/create_social_access_tokens_table.php.stub' => database_path('migrations/' . date('Y_m_d_His', time()) . '_create_social_access_tokens.php'),
+                    __DIR__ . '/../database/migrations/create_social_access_tokens_table.php.stub' => database_path('migrations/tenants' . date('Y_m_d_His', time()) . '_create_social_access_tokens.php'),
                 ], 'migrations ');
             }
         }
@@ -50,7 +50,7 @@ class LaravelSocialIntegrationServiceProvider extends ServiceProvider
         $this->app->bind('laravel-social', function ($app, $client) {
             return LaravelSocialIntegration::service($client['client']);
         });
-        $this->mapWebRoutes();
+      //  $this->mapWebRoutes();
     }
 
     /**

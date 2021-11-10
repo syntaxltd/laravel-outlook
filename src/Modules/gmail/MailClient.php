@@ -133,15 +133,6 @@ class MailClient extends \Google_Client implements SocialClient
 
     protected function setMessage(\Google_Service_Gmail_Message $message)
     {
-        $this->id = $message->getId();
-        $this->internalDate = $message->getInternalDate();
-        $this->labels = $message->getLabelIds();
-        $this->size = $message->getSizeEstimate();
-        $this->threadId = $message->getThreadId();
-        $this->historyId = $message->getHistoryId();
-        $this->payload = $message->getPayload();
-        if ($this->payload) {
-            $this->parts = collect($this->payload->getParts());
-        }
+        // TODO: Implement setMessage() method.
     }
 }

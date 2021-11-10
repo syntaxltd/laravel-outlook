@@ -254,7 +254,7 @@ trait SendMail
      *
      * @return SendMail
      */
-    public function sendMail()
+    public function sendMail(): static
     {
         $body = $this->getMessageBody();
 
