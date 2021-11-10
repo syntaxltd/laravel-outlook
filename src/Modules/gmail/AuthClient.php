@@ -3,11 +3,11 @@
 
 namespace Syntax\LaravelSocialIntegration\Modules\gmail;
 
-use _PHPStan_76800bfb5\Nette\InvalidStateException;
 use App\Models\PartnerUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Syntax\LaravelSocialIntegration\Contracts\SocialClientAuth;
+use Syntax\LaravelSocialIntegration\Exceptions\InvalidStateException;
 use Syntax\LaravelSocialIntegration\Models\SocialAccessToken;
 use Syntax\LaravelSocialIntegration\Modules\gmail\traits\Configurable;
 use Throwable;
