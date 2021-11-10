@@ -3,17 +3,15 @@
 
 namespace Syntax\LaravelSocialIntegration\Modules\gmail;
 
+use _PHPStan_76800bfb5\Nette\InvalidStateException;
 use App\Models\PartnerUser;
-use Carbon\Carbon;
-use Exception;
-use Google_Service_Gmail;
-use Illuminate\Contracts\Auth\StatefulGuard;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Syntax\LaravelSocialIntegration\Contracts\SocialClientAuth;
 use Syntax\LaravelSocialIntegration\Models\SocialAccessToken;
 use Syntax\LaravelSocialIntegration\Modules\gmail\traits\Configurable;
+use Throwable;
+use function Safe\base64_decode;
 
 class AuthClient extends \Google_Client implements SocialClientAuth
 {
@@ -39,42 +37,40 @@ class AuthClient extends \Google_Client implements SocialClientAuth
     public function getOAuthClient(): string
     {
         $this->setState(base64_encode(tenant('id')));
+
         return $this->createAuthUrl();
     }
 
     /**
-     * @throws Exception
+     * @throws Throwable
      */
     public function storeToken(Request $request): void
     {
-            $code = (string) $request->input('code', null);
-            $state = (string) base64_decode($request->input('state', null));
+        /** @var string|null $code */
+        $code = $request->input('code');
 
-            if (!is_null($code) && !empty($code)) {
-                $accessToken = $this->fetchAccessTokenWithAuthCode($code);
-                parent::setAccessToken($accessToken);
-                Log::info($accessToken);
-                if(!is_null($state) && !empty($state)) {
-                    //Initialize tenant
-                    tenancy()->initialize($state);
+        /** @var string|null $state */
+        $state = base64_decode($request->input('state'));
 
-                    /**
-                     * @var PartnerUser
-                     */
-                    $user = $this->guard()->user();
-                    SocialAccessToken::updateOrCreate(
-                        ['partner_user_id' => $user->id],
-                        [
-                            'access_token' => $accessToken['access_token'],
-                            'refresh_token' => $accessToken['refresh_token'],
-                            'expires_in' => $accessToken['expires_in'],
-                            'type' => 'gmail'
-                        ]);
-                }
+        throw_if(is_null($code) || is_null($state), new InvalidStateException('No access token.'));
 
-            } else {
-                throw new Exception('No access token');
-            }
+        $accessToken = $this->fetchAccessTokenWithAuthCode($code);
+        parent::setAccessToken($accessToken);
+        Log::info('', [$accessToken]);
+
+        //Initialize tenant
+        tenancy()->initialize($state);
+
+        /**
+         * @var PartnerUser
+         */
+        $user = auth('partneruser')->user();
+        SocialAccessToken::query()->updateOrCreate(['partner_user_id' => $user->id], [
+            'access_token' => $accessToken['access_token'],
+            'refresh_token' => $accessToken['refresh_token'],
+            'expires_in' => $accessToken['expires_in'],
+            'type' => 'gmail',
+        ]);
     }
 
     public function clearTokens(): void
@@ -84,15 +80,4 @@ class AuthClient extends \Google_Client implements SocialClientAuth
         // Change to get Social Access Token for authenticated users
         SocialAccessToken::take(1)->delete();
     }
-
-    /**
-     * Get the guard to be used during authentication.
-     *
-     * @return StatefulGuard
-     */
-    protected function guard(): StatefulGuard
-    {
-        return Auth::guard('partneruser');
-    }
-
 }
