@@ -15,10 +15,10 @@ class CreateSocialAccessTokensTable extends Migration
     {
         Schema::create('social_access_tokens', function (Blueprint $table) {
             $table->id();
-            $table->string('access_token');
-            $table->string('refresh_token')->nullable();
+            $table->text('access_token');
+            $table->text('refresh_token')->nullable();
             $table->string('type')->nullable();
-            $table->integer('expires_in')->nullable();
+            $table->integer('expires_at')->nullable();
             $table->timestamps();
         });
     }

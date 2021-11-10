@@ -2,6 +2,7 @@
 
 namespace Syntax\LaravelSocialIntegration\Modules\outlook;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Provider\GenericProvider;
@@ -69,29 +70,60 @@ class AuthClient implements SocialClientAuth
                     'code' => $authCode,
                 ]);
 
-                SocialAccessToken::query()->updateOrCreate(['partner_user_id' => '0a7b9e4a-3c1a-4777-a370-fd447f77002b'], [
-                    'access_token' => $accessToken->getToken(),
-                    'refresh_token' => $accessToken->getRefreshToken(),
-                    'expires_at' => $accessToken->getExpires(),
-                    'type' => 'Bearer',
-                ]);
-
+                $this->saveToken($accessToken);
             } catch (IdentityProviderException $exception) {
                 throw $exception;
             }
         }
     }
 
-    public function clearTokens(): void
+    private function saveToken(AccessToken $accessToken): SocialAccessToken|Model
     {
-        SocialAccessToken::query()->where('partner_user_id', '0a7b9e4a-3c1a-4777-a370-fd447f77002b')->delete();
+        return SocialAccessToken::query()->updateOrCreate(['partner_user_id' => '8da62473-1897-429a-9b76-1285c34fe4c7'], [
+            'access_token' => $accessToken->getToken(),
+            'refresh_token' => $accessToken->getRefreshToken(),
+            'expires_at' => $accessToken->getExpires(),
+            'type' => 'Bearer',
+        ]);
     }
 
-    public function getToken(): string|null
+    public function clearTokens(): void
+    {
+        SocialAccessToken::query()->where('partner_user_id', '8da62473-1897-429a-9b76-1285c34fe4c7')->delete();
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function getToken(): string
     {
         /** @var SocialAccessToken|null $accessToken */
-        $accessToken = SocialAccessToken::query()->where('partner_user_id', '0a7b9e4a-3c1a-4777-a370-fd447f77002b')->first();
+        $accessToken = SocialAccessToken::query()->where('partner_user_id', '8da62473-1897-429a-9b76-1285c34fe4c7')->first();
 
-        return $accessToken?->access_token;
+        // Check if tokens exist
+        if (is_null($accessToken)) {
+            return '';
+        }
+
+        // Check if token is expired
+        //Get current time + 5 minutes (to allow for time differences)
+        $now = time() + 300;
+        if ($accessToken->expires_at <= $now) {
+            // Token is expired (or very close to it)
+            // so let's refresh
+            try {
+                $newToken = $this->getOAuthClient()->getAccessToken('refresh_token', [
+                    'refresh_token' => $accessToken->refresh_token,
+                ]);
+
+                // Store the new values
+                return $this->saveToken($newToken)->access_token;
+            } catch (IdentityProviderException $e) {
+                return '';
+            }
+        }
+
+        // Token is still valid, just return it
+        return $accessToken->access_token;
     }
 }

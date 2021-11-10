@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Syntax\LaravelSocialIntegration\Http\Controllers\Auth\LoginController;
 use Syntax\LaravelSocialIntegration\Http\Controllers\MailController;
+use Syntax\LaravelSocialIntegration\LaravelSocialIntegration;
 
 Route::middleware('web')->group(function () {
     Route::group(['prefix' => '/oauth', 'as' => 'oauth.'], function () {
@@ -18,5 +19,9 @@ Route::middleware('web')->group(function () {
         Route::get('/message/create/{client}', [MailController::class, 'create'])
             ->where('client', 'gmail|outlook')
             ->name('message.create');
+    });
+
+    Route::get('/test', function () {
+        return LaravelSocialIntegration::service('outlook')->fetchMessages();
     });
 });
