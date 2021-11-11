@@ -3,8 +3,12 @@
 
 namespace Syntax\LaravelSocialIntegration\Modules\gmail;
 
+use App\Helpers\ConvertArray;
 use Google_Service_Gmail;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Swift_Message;
 use Syntax\LaravelSocialIntegration\Contracts\SocialClient;
 use Syntax\LaravelSocialIntegration\Models\SocialAccessToken;
@@ -120,15 +124,21 @@ class MailClient extends \Google_Client implements SocialClient
      */
     public function send(Request $request): static
     {
-        $this->to($request->input('to'));
-        $this->from($request->input('from'));
+        $this->to($this->getContacts($request));
+        $this->from(Auth::user()->email, Auth::user()->name);
         $this->cc($request->input('cc'));
         $this->bcc($request->input('bcc'));
         $this->subject($request->input('subject'));
         $this->message($request->input('message'));
         $this->sendMail();
-
         return $this;
+    }
+
+    private function getContacts(Request $request): array
+    {
+        return collect($request->input('contact'))->filter()->map(function ($item) {
+            return $item['email'];
+        })->toArray();
     }
 
     protected function setMessage(\Google_Service_Gmail_Message $message)

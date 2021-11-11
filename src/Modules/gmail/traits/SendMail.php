@@ -6,6 +6,7 @@ namespace Syntax\LaravelSocialIntegration\Modules\gmail\traits;
 
 use Google_Service_Gmail_Message;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
+use Illuminate\Support\Facades\Log;
 use Swift_Message;
 
 trait SendMail
@@ -99,7 +100,6 @@ trait SendMail
 
     public function __construct()
     {
-        $this->swiftMessage = new Swift_Message();
     }
 
 
@@ -230,8 +230,11 @@ trait SendMail
     private function getMessageBody(): Google_Service_Gmail_Message
     {
         $body = new Google_Service_Gmail_Message();
-
-        $this->swiftMessage
+        // Create the message
+        $message = (new Swift_Message());
+        Log::info($this->to);
+        Log::info($this->from);
+        $message
             ->setSubject($this->subject)
             ->setFrom($this->from, $this->nameFrom)
             ->setTo($this->to, $this->nameTo)
@@ -240,7 +243,7 @@ trait SendMail
             ->setBody($this->message, 'text/html')
             ->setPriority(2);
 
-        $body->setRaw($this->base64_encode($this->swiftMessage->toString()));
+        $body->setRaw($this->base64_encode($message->toString()));
 
         return $body;
     }

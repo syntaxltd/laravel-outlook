@@ -57,17 +57,21 @@ class AuthClient extends \Google_Client implements SocialClientAuth
 
          $values = explode("/", $state);
          $accessToken = $this->fetchAccessTokenWithAuthCode($code);
+         if(in_array('access_token', $accessToken)) {
+             parent::setAccessToken($accessToken);
+             //Initialize tenant
+             tenancy()->initialize($values[0]);
 
-         parent::setAccessToken($accessToken);
-        //Initialize tenant
-        tenancy()->initialize($values[0]);
-
-        SocialAccessToken::query()->updateOrCreate(['partner_user_id' => $values[1]], [
-            'access_token' => $accessToken['access_token'],
-            'refresh_token' => $accessToken['refresh_token'],
-            'expires_in' => $accessToken['expires_in'],
-            'type' => 'gmail',
-        ]);
+             SocialAccessToken::query()->updateOrCreate(
+                 [
+                     'partner_user_id' => $values[1],
+                     'type' => 'gmail',
+                 ], [
+                 'access_token' => $accessToken['access_token'],
+                 'refresh_token' => $accessToken['refresh_token'],
+                 'expires_in' => $accessToken['expires_in'],
+             ]);
+         }
     }
 
     public function clearTokens(): void
@@ -75,6 +79,6 @@ class AuthClient extends \Google_Client implements SocialClientAuth
         $this->revokeToken();
 
         // Change to get Social Access Token for authenticated users
-        SocialAccessToken::take(1)->delete();
+        SocialAccessToken::Where('partner_user_id', Auth::id())->where('type', 'gmail')->delete();
     }
 }

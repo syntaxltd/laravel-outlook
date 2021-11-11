@@ -19,7 +19,10 @@ class CreateSocialAccessTokensTable extends Migration
             $table->text('refresh_token')->nullable();
             $table->string('type')->nullable();
             $table->integer('expires_at')->nullable();
+            $table->uuid('partner_user_id');
             $table->timestamps();
+
+            $table->foreign('partner_user_id')->references('id')->on('partner_users')->onDelete('set null');
         });
     }
 
