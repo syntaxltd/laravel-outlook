@@ -37,7 +37,7 @@ class AuthClient extends \Google_Client implements SocialClientAuth
      */
     public function getOAuthClient(): string
     {
-        $this->setState(base64_encode(tenant('id').'/'. Auth::id()));
+        $this->setState(tenant('id'));
 
         return $this->createAuthUrl();
     }
@@ -47,24 +47,17 @@ class AuthClient extends \Google_Client implements SocialClientAuth
      */
     public function storeToken(Request $request): void
     {
-        Log::info('called');
         /** @var string|null $code */
         $code = $request->input('code');
 
-        /** @var string|null $state */
-        $state = base64_decode($request->input('state'));
-        throw_if(is_null($code) || is_null($state), new InvalidStateException('No access token.'));
+        throw_if(is_null($code), new InvalidStateException('No access token.'));
 
-         $values = explode("/", $state);
          $accessToken = $this->fetchAccessTokenWithAuthCode($code);
          if(in_array('access_token', $accessToken)) {
              parent::setAccessToken($accessToken);
-             //Initialize tenant
-             tenancy()->initialize($values[0]);
-
              SocialAccessToken::query()->updateOrCreate(
                  [
-                     'partner_user_id' => $values[1],
+                     'partner_user_id' => Auth::id(),
                      'type' => 'gmail',
                  ], [
                  'access_token' => $accessToken['access_token'],
