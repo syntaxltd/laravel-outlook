@@ -18,10 +18,12 @@ class AuthClient implements SocialClientAuth
     {
         $client = $this->getOAuthClient();
 
-        $url = $client->getAuthorizationUrl();
+        $url = $client->getAuthorizationUrl(['state' => tenant()->id]);
 
         // Save client state so we can validate in callback
         session(['oauthState' => $client->getState()]);
+
+        info('', [session('oauthState')]);
 
         return $url;
     }
@@ -43,7 +45,7 @@ class AuthClient implements SocialClientAuth
             'urlAuthorize' => config('laravel-social-integration.services.outlook.authority') . config('laravel-social-integration.services.outlook.authorizeEndpoint'),
             'urlAccessToken' => config('laravel-social-integration.services.outlook.authority') . config('laravel-social-integration.services.outlook.tokenEndpoint'),
             'urlResourceOwnerDetails' => '',
-            'scopes' => config('laravel-social-integration.services.outlook.scopes')
+            'scopes' => config('laravel-social-integration.services.outlook.scopes'),
         ];
     }
 
@@ -56,6 +58,7 @@ class AuthClient implements SocialClientAuth
         $expectedState = session('oauthState');
         $request->session()->forget('oauthState');
         $providedState = $request->query('state');
+//        dd($expectedState, $providedState);
 
         throw_if(!isset($expectedState) || !isset($providedState) || $expectedState != $providedState, new InvalidStateException);
 
