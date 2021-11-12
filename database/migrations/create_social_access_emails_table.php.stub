@@ -16,12 +16,14 @@ class CreateSocialAccessEmailsTable extends Migration
         Schema::create('social_access_emails', function (Blueprint $table) {
             $table->id();
             $table->foreignId('social_access_token_id')->nullable()->constrained()->nullOnDelete();
-            $table->string('to')->nullable();
-            $table->string('from')->nullable();
+            $table->string('email_id');
+            $table->string('thread_id');
+            $table->string('to');
+            $table->string('from');
             $table->string('cc')->nullable();
             $table->string('bcc')->nullable();
-            $table->text('subject')->nullable();
-            $table->text('message')->nullable();
+            $table->text('subject');
+            $table->text('message');
             $table->timestamps();
         });
     }

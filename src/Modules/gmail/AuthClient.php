@@ -50,21 +50,22 @@ class AuthClient extends \Google_Client implements SocialClientAuth
         /** @var string|null $code */
         $code = $request->input('code');
 
+        Log::info($code);
         throw_if(is_null($code), new InvalidStateException('No access token.'));
 
          $accessToken = $this->fetchAccessTokenWithAuthCode($code);
-         if(in_array('access_token', $accessToken)) {
-             parent::setAccessToken($accessToken);
-             SocialAccessToken::query()->updateOrCreate(
-                 [
-                     'partner_user_id' => Auth::id(),
-                     'type' => 'gmail',
-                 ], [
-                 'access_token' => $accessToken['access_token'],
-                 'refresh_token' => $accessToken['refresh_token'],
-                 'expires_in' => $accessToken['expires_in'],
-             ]);
-         }
+
+         parent::setAccessToken($accessToken);
+         SocialAccessToken::query()->updateOrCreate(
+             [
+                 'partner_user_id' => Auth::id(),
+                 'type' => 'gmail',
+             ], [
+             'access_token' => $accessToken['access_token'],
+             'refresh_token' => $accessToken['refresh_token'],
+             'expires_in' => $accessToken['expires_in'],
+         ]);
+
     }
 
     public function clearTokens(): void

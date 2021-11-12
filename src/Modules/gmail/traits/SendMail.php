@@ -4,224 +4,306 @@
 namespace Syntax\LaravelSocialIntegration\Modules\gmail\traits;
 
 
+use Carbon\Carbon;
+use Exception;
 use Google_Service_Gmail_Message;
-use Illuminate\Contracts\Filesystem\FileNotFoundException;
+use Google_Service_Gmail_MessagePart;
 use Illuminate\Support\Facades\Log;
 use Swift_Message;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 trait SendMail
 {
+    use SendsParameters, HasParts;
 
-    private $swiftMessage;
+    public Google_Service_Gmail_MessagePart|null $payload;
 
-    /**
-     * Gmail optional parameters
-     *
-     * @var array
-     */
-    private $parameters = [];
-
-    /**
-     * Text or html message to send
-     *
-     * @var string
-     */
-    private $message;
-
-    /**
-     * Subject of the email
-     *
-     * @var string
-     */
-    private $subject;
-
-    /**
-     * Sender's email
-     *
-     * @var string
-     */
-    private $from;
-
-    /**
-     * Sender's name
-     *
-     * @var  string
-     */
-    private $nameFrom;
-
-    /**
-     * Email of the recipient
-     *
-     * @var string|array
-     */
-    private $to;
-
-    /**
-     * Name of the recipient
-     *
-     * @var string
-     */
-    private $nameTo;
-
-    /**
-     * Single email or array of email for a carbon copy
-     *
-     * @var array|string
-     */
-    private $cc;
-
-    /**
-     * Name of the recipient
-     *
-     * @var string
-     */
-    private $nameCc;
-
-    /**
-     * Single email or array of email for a blind carbon copy
-     *
-     * @var array|string
-     */
-    private $bcc;
-
-    /**
-     * Name of the recipient
-     *
-     * @var string
-     */
-    private $nameBcc;
-
-    /**
-     * List of attachments
-     *
-     * @var array
-     */
-    private $attachments = [];
+    public collection|null $parts;
 
     public function __construct()
     {
     }
 
-
     /**
-     * Receives the recipient's
-     * If multiple recipients will receive the message an array should be used.
-     * Example: array('receiver@domain.org', 'other@domain.org' => 'A name')
+     * Returns ID of the email
      *
-     * If $name is passed and the first parameter is a string, this name will be
-     * associated with the address.
-     *
-     * @param  string|array  $to
-     *
-     * @param  string|null  $name
-     *
-     * @return SendMail
+     * @return string
      */
-    public function to($to, $name = null): static
+    public function getId(): string
     {
-        $this->to = $to;
-        $this->nameTo = $name;
-
-        return $this;
+        return $this->id;
     }
 
-    public function from($from, $name = null): static
-    {
-        $this->from = $from;
-        $this->nameFrom = $name;
 
-        return $this;
+    /**
+     * Return a UNIX version of the date
+     *
+     * @return int UNIX date
+     */
+    public function getInternalDate(): int
+    {
+        return $this->internalDate;
     }
 
     /**
-     * @param  array|string  $cc
+     * Returns the labels of the email
+     * Example: INBOX, STARRED, UNREAD
      *
-     * @param  string|null  $name
-     *
-     * @return SendMail
+     * @return array
      */
-    public function cc($cc, $name = null): static
+    public function getLabels(): array
     {
-        $this->cc = $this->emailList($cc, $name);
-        $this->nameCc = $name;
-
-        return $this;
+        return $this->labels;
     }
 
-    private function emailList($list, $name = null)
+    /**
+     * Returns approximate size of the email
+     *
+     * @return mixed
+     */
+    public function getSize(): mixed
     {
-        if (is_array($list)) {
-            return $this->convertEmailList($list, $name);
-        } else {
-            return $list;
+        return $this->size;
+    }
+
+    /**
+     * Returns thread ID of the email
+     *
+     * @return string
+     */
+    public function getThreadId(): string
+    {
+        return $this->threadId;
+    }
+
+    /**
+     * Returns all the headers of the email
+     *
+     * @return Collection
+     */
+    public function getHeaders(): Collection
+    {
+        return $this->buildHeaders($this->payload->getHeaders());
+    }
+
+    /**
+     * Returns the subject of the email
+     *
+     * @return string
+     */
+    public function getSubject(): string
+    {
+        return $this->getHeader('Subject');
+    }
+
+    /**
+     * Returns the subject of the email
+     *
+     * @return array|string
+     */
+    public function getReplyTo(): array|string
+    {
+        $replyTo = $this->getHeader('Reply-To');
+
+        return $this->getFrom($replyTo ?: $this->getHeader('From'));
+    }
+
+    /**
+     * Returns array of name and email of each recipient
+     *
+     * @param string|null $email
+     * @return array
+     */
+    public function getFrom(string|null $email = null): array
+    {
+        $from = $email ?: $this->getHeader('From');
+
+        preg_match('/<(.*)>/', $from, $matches);
+
+        $name = preg_replace('/ <(.*)>/', '', $from);
+
+        return [
+            'name'  => $name,
+            'email' => $matches[1] ?? null,
+        ];
+    }
+
+    /**
+     * Returns email of sender
+     *
+     * @return string|null
+     */
+    public function getFromEmail(): ?string
+    {
+        $from = $this->getHeader('From');
+
+        if (filter_var($from, FILTER_VALIDATE_EMAIL)) {
+            return $from;
         }
+
+        preg_match('/<(.*)>/', $from, $matches);
+
+        return $matches[1] ?? null;
     }
 
-    private function convertEmailList($emails, $name = null): array
+    /**
+     * Returns name of the sender
+     *
+     * @return string|null
+     */
+    public function getFromName(): ?string
     {
-        $newList = [];
-        $count = 0;
-        foreach ($emails as $key => $email) {
-            $emailName = isset($name[$count]) ? $name[$count] : explode('@', $email)[0];
-            $newList[$email] = $emailName;
-            $count = $count + 1;
+        $from = $this->getHeader('From');
+
+        return preg_replace('/ <(.*)>/', '', $from);
+    }
+
+    /**
+     * Returns array list of recipients
+     *
+     * @return array
+     */
+    public function getTo(): array
+    {
+        $allTo = $this->getHeader('To');
+
+        return $this->formatEmailList($allTo);
+    }
+
+    /**
+     * Returns array list of cc recipients
+     *
+     * @return array
+     */
+    public function getCc(): array
+    {
+        $allCc = $this->getHeader('Cc');
+
+        return $this->formatEmailList($allCc);
+    }
+
+    /**
+     * Returns array list of bcc recipients
+     *
+     * @return array
+     */
+    public function getBcc(): array
+    {
+        $allBcc = $this->getHeader('Bcc');
+
+        return $this->formatEmailList($allBcc);
+    }
+
+    /**
+     * Returns an array of emails from an string in RFC 822 format
+     *
+     * @param string $emails email list in RFC 822 format
+     *
+     * @return array
+     */
+    public function formatEmailList(string $emails): array
+    {
+        $all = [];
+        $explodedEmails = explode(',', $emails);
+
+        foreach ($explodedEmails as $email) {
+
+            $item = [];
+
+            preg_match('/<(.*)>/', $email, $matches);
+
+            $item['email'] = str_replace(' ', '', $matches[1] ?? $email);
+
+            $name = preg_replace('/ <(.*)>/', '', $email);
+
+            if (Str::startsWith($name, ' ')) {
+                $name = substr($name, 1);
+            }
+
+            $item['name'] = str_replace("\"", '', $name ?: null);
+
+            $all[] = $item;
+
         }
 
-        return $newList;
+        return $all;
     }
 
     /**
-     * @param  array|string  $bcc
+     * Returns the original date that the email was sent
      *
-     * @param  string|null  $name
-     *
-     * @return SendMail
+     * @return Carbon
      */
-    public function bcc($bcc, $name = null): static
+    public function getDate(): Carbon
     {
-        $this->bcc = $this->emailList($bcc, $name);
-        $this->nameBcc = $name;
-
-        return $this;
+        return Carbon::parse($this->getHeader('Date'));
     }
 
     /**
-     * @param  string  $subject
+     * Returns email of the original recipient
      *
-     * @return SendMail
+     * @return string
      */
-    public function subject($subject): static
+    public function getDeliveredTo(): string
     {
-        $this->subject = $subject;
-
-        return $this;
+        return $this->getHeader('Delivered-To');
     }
 
     /**
-     * @param  string  $view
-     * @param  array  $data
-     * @param  array  $mergeData
+     * Base64 version of the body
      *
-     * @return SendMail
-     * @throws \Throwable
+     * @return string
+     * @throws Exception
      */
-    public function view($view, $data = [], $mergeData = []): static
+    public function getRawPlainTextBody(): string
     {
-        $this->message = view($view, $data, $mergeData)->render();
-
-        return $this;
+        return $this->getPlainTextBody(true);
     }
 
     /**
-     * @param  string  $message
+     * @param bool $raw
      *
-     * @return SendMail
+     * @return string
+     * @throws Exception
      */
-    public function message($message): static
+    public function getPlainTextBody(bool $raw = false): string
     {
-        $this->message = $message;
+        $content = $this->getBody();
 
-        return $this;
+        return $raw ? $content : $this->getDecodedBody($content);
+    }
+
+    /**
+     * Returns a specific body part from an email
+     *
+     * @param string $type
+     *
+     * @return null|string
+     * @throws Exception
+     */
+    public function getBody(string $type = 'text/plain'): ?string
+    {
+        $parts = $this->getAllParts($this->parts);
+
+        try {
+            if (!$parts->isEmpty()) {
+                foreach ($parts as $part) {
+                    if ($part->mimeType == $type) {
+                        return $part->body->data;
+                        //if there are no parts in payload, try to get data from body->data
+                    } elseif ($this->payload->body->data) {
+                        return $this->payload->body->data;
+                    }
+                }
+            } else {
+                return $this->payload->body->data;
+            }
+        } catch (Exception) {
+            throw new Exception("Preload or load the single message before getting the body.");
+        }
+
+        return null;
     }
 
     /**
@@ -232,8 +314,6 @@ trait SendMail
         $body = new Google_Service_Gmail_Message();
         // Create the message
         $message = (new Swift_Message());
-        Log::info($this->to);
-        Log::info($this->from);
         $message
             ->setSubject($this->subject)
             ->setFrom($this->from, $this->nameFrom)
@@ -247,7 +327,21 @@ trait SendMail
 
         return $body;
     }
-    private function base64_encode($data)
+
+    /**
+     * Decodes the body from gmail to make it readable
+     *
+     * @param $content
+     * @return bool|string
+     */
+    public function getDecodedBody($content): bool|string
+    {
+        $content = str_replace('_', '/', str_replace('-', '+', $content));
+
+        return base64_decode($content);
+    }
+
+    private function base64_encode($data): string
     {
         return rtrim(strtr(base64_encode($data), ['+' => '-', '/' => '_']), '=');
     }
@@ -260,12 +354,41 @@ trait SendMail
     public function sendMail(): static
     {
         $body = $this->getMessageBody();
-
         $this->setMessage($this->service->users_messages->send('me', $body, $this->parameters));
 
         return $this;
     }
 
-    protected abstract function setMessage(\Google_Service_Gmail_Message $message);
+    /**
+     * Sets data from mail
+     *
+     * @param Google_Service_Gmail_Message $message
+     */
+    protected function setMessage(Google_Service_Gmail_Message $message)
+    {
+        $this->id = $message->getId();
+        $this->internalDate = $message->getInternalDate();
+        $this->labels = $message->getLabelIds();
+        $this->size = $message->getSizeEstimate();
+        $this->threadId = $message->getThreadId();
+        $this->payload = $message->getPayload();
+        if ($this->payload) {
+            $this->parts = collect($this->payload->getParts());
+        }
+    }
+
+    /**
+     * Sets the metadata from Mail when preloaded
+     */
+    protected function setMetadata()
+    {
+        $this->to = $this->getTo();
+        $from = $this->getFrom();
+        $this->from = $from['email'] ?? null;
+        $this->nameFrom = $from['email'] ?? null;
+
+        $this->subject = $this->getSubject();
+    }
+
 
 }
