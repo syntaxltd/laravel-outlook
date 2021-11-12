@@ -3,10 +3,6 @@
 
 namespace Syntax\LaravelSocialIntegration\Modules\gmail\traits;
 
-use Exception;
-use Google_Service_Gmail_ModifyMessageRequest;
-use Throwable;
-
 trait SendsParameters
 {
     private array $parameters = [];
@@ -143,45 +139,6 @@ trait SendsParameters
     }
 
     /**
-     * Adds labels to the email
-     *
-     * @param  string|array  $labels
-     *
-     * @return SendMail
-     * @throws Exception
-     */
-    public function addLabel(string|array $labels): SendMail
-    {
-        if (is_string($labels)) {
-            $labels = [$labels];
-        }
-        $messageRequest = new Google_Service_Gmail_ModifyMessageRequest();
-
-        $messageRequest->setAddLabelIds($labels);
-
-        try {
-            return $this->modify($messageRequest);
-        } catch (Exception $e) {
-            throw new Exception("Couldn't add labels: {$e->getMessage()}");
-        }
-    }
-
-    /**
-     * @param  string  $view
-     * @param  array  $data
-     * @param  array  $mergeData
-     *
-     * @return SendMail
-     * @throws Throwable
-     */
-    public function view(string $view, array $data = [], array $mergeData = []): static
-    {
-        $this->message = view($view, $data, $mergeData)->render();
-
-        return $this;
-    }
-
-    /**
      * @param  string  $message
      *
      * @return SendMail
@@ -191,17 +148,6 @@ trait SendsParameters
         $this->message = $message;
 
         return $this;
-    }
-
-    /**
-     * Executes the modification
-     *
-     * @param Google_Service_Gmail_ModifyMessageRequest $messageRequest
-     * @return SendMail
-     */
-    private function modify(Google_Service_Gmail_ModifyMessageRequest $messageRequest): SendMail
-    {
-        return $this->service->users_messages->modify('me', $this->getId(), $messageRequest);
     }
 
 }
