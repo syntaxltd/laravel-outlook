@@ -11,7 +11,7 @@ use Illuminate\Support\Collection;
 
 trait SendMail
 {
-    use SendsParameters, HasParts;
+    use SendsParameters;
 
     public Google_Service_Gmail_MessagePart|null $payload;
 
@@ -87,19 +87,6 @@ trait SendMail
         if ($this->payload) {
             $this->parts = collect($this->payload->getParts());
         }
-    }
-
-    /**
-     * Sets the metadata from Mail when preloaded
-     */
-    protected function setMetadata()
-    {
-        $this->to = $this->getTo();
-        $from = $this->getFrom();
-        $this->from = $from['email'] ?? null;
-        $this->nameFrom = $from['email'] ?? null;
-
-        $this->subject = $this->getSubject();
     }
 
 
