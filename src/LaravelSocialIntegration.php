@@ -35,10 +35,4 @@ class LaravelSocialIntegration
         return SocialAccessToken::Where('partner_user_id', Auth::id())->get();
     }
 
-    public function getMessages(): mixed
-    {
-        $clients = SocialAccessToken::Where('partner_user_id', Auth::id())->pluck('id');
-        Log::info('clients', [$clients]);
-        return SocialAccessEmail::whereIn('social_access_token_id', $clients)->get();
-    }
 }

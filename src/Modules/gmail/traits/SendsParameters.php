@@ -3,19 +3,22 @@
 
 namespace Syntax\LaravelSocialIntegration\Modules\gmail\traits;
 
+use Illuminate\Support\Str;
+use Syntax\LaravelSocialIntegration\Modules\gmail\services\Mail;
+
 trait SendsParameters
 {
     private array $parameters = [];
 
-    public int|string $id;
+    public string $id;
 
-    public int|string $threadId;
+    public string $threadId;
 
     private string $message;
 
-    private string $subject;
+    private string|null $subject;
 
-    private string|null $from;
+    private string $from;
 
     private string|null $nameFrom;
 
@@ -56,7 +59,7 @@ trait SendsParameters
      *
      * @param  string|null  $name
      *
-     * @return SendMail
+     * @return Mail
      */
     public function to(array|string $to, string|null $name = null): static
     {
@@ -79,7 +82,7 @@ trait SendsParameters
      *
      * @param  string|null  $name
      *
-     * @return SendMail
+     * @return Mail
      */
     public function cc(array|string|null $cc, string|null $name = null): static
     {
@@ -112,11 +115,46 @@ trait SendsParameters
     }
 
     /**
+     * Returns an array of emails from an string in RFC 822 format
+     *
+     * @param string|null $emails email list in RFC 822 format
+     *
+     * @return array
+     */
+    public function formatEmailList(string|null $emails): array
+    {
+        $all = [];
+        $explodedEmails = explode(',', $emails);
+
+        foreach ($explodedEmails as $email) {
+
+            $item = [];
+
+            preg_match('/<(.*)>/', $email, $matches);
+
+            $item['email'] = str_replace(' ', '', $matches[1] ?? $email);
+
+            $name = preg_replace('/ <(.*)>/', '', $email);
+
+            if (Str::startsWith($name, ' ')) {
+                $name = substr($name, 1);
+            }
+
+            $item['name'] = str_replace("\"", '', $name ?: null);
+
+            $all[] = $item;
+
+        }
+
+        return $all;
+    }
+
+    /**
      * @param  array|string|null  $bcc
      *
      * @param  string|null  $name
      *
-     * @return SendMail
+     * @return Mail
      */
     public function bcc(array|string|null $bcc, string|null $name = null): static
     {
@@ -129,7 +167,7 @@ trait SendsParameters
     /**
      * @param  string  $subject
      *
-     * @return SendMail
+     * @return Mail
      */
     public function subject(string $subject): static
     {
@@ -141,7 +179,7 @@ trait SendsParameters
     /**
      * @param  string  $message
      *
-     * @return SendMail
+     * @return Mail
      */
     public function message(string $message): static
     {

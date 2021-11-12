@@ -16,4 +16,5 @@ class LaravelGmail extends \Google_Client
     {
         return new MailClient();
     }
+
 }

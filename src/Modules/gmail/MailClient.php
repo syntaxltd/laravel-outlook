@@ -9,18 +9,15 @@ use Google_Service_Gmail;
 use Google_Service_Gmail_Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Syntax\LaravelSocialIntegration\Contracts\SocialClient;
-use Syntax\LaravelSocialIntegration\Models\SocialAccessEmail;
 use Syntax\LaravelSocialIntegration\Models\SocialAccessToken;
+use Syntax\LaravelSocialIntegration\Modules\gmail\services\Mail;
 use Syntax\LaravelSocialIntegration\Modules\gmail\traits\Configurable;
-use Syntax\LaravelSocialIntegration\Modules\gmail\traits\SendMail;
 
 class MailClient extends Google_Client implements SocialClient
 {
 
     use Configurable;
-    use SendMail;
 
     protected string $emailAddress;
 
@@ -32,9 +29,6 @@ class MailClient extends Google_Client implements SocialClient
 
         $this->configApi();
 
-        if ($this->isAccessTokenExpired()) {
-            $this->refreshTokenIfNeeded();
-        }
         $this->service = new Google_Service_Gmail($this);
     }
 
@@ -82,20 +76,26 @@ class MailClient extends Google_Client implements SocialClient
      * Sends a new email
      *
      * @param Request $request
-     * @return SocialAccessEmail
+     * @return Mail
      * @throws Exception
      */
-    public function send(Request $request): SocialAccessEmail
+    public function send(Request $request): Mail
     {
-        $this->to('evamwng@gmail.com');
-        $this->from(Auth::user()->email, Auth::user()->name);
-        $this->cc($request->input('cc'));
-        $this->bcc($request->input('bcc'));
-        $this->subject($request->input('subject'));
-        $this->message($request->input('message'));
-        $this->sendMail();
 
-        return $this->storeMessage();
+        if ($this->isAccessTokenExpired()) {
+            $this->refreshTokenIfNeeded();
+        }
+
+        $mail = new Mail();
+        $mail->to($this->getContacts($request));
+        $mail->from(Auth::user()->email, Auth::user()->name);
+        $mail->cc($request->input('cc'));
+        $mail->bcc($request->input('bcc'));
+        $mail->subject($request->input('subject'));
+        $mail->message($request->input('message'));
+        $mail->send();
+
+        return $mail;
     }
 
     private function getContacts(Request $request): array
@@ -105,20 +105,4 @@ class MailClient extends Google_Client implements SocialClient
         })->toArray();
     }
 
-    private function storeMessage(): SocialAccessEmail
-    {
-        return SocialAccessEmail::updateOrCreate(
-            [
-                'email_id' => $this->id
-            ],[
-            'social_access_token_id' => SocialAccessToken::Where('partner_user_id', Auth::id())->where('type', 'gmail')->first()->id,
-            'thread_id' => $this->threadId,
-            'to' => $this->to,
-            'from' => $this->from,
-            'cc' =>$this->cc,
-            'bcc' => $this->bcc,
-            'subject' => $this->subject,
-            'message' => $this->message
-        ]);
-    }
 }
