@@ -50,7 +50,6 @@ class AuthClient extends \Google_Client implements SocialClientAuth
         /** @var string|null $code */
         $code = $request->input('code');
 
-        Log::info($code);
         throw_if(is_null($code), new InvalidStateException('No access token.'));
 
          $accessToken = $this->fetchAccessTokenWithAuthCode($code);

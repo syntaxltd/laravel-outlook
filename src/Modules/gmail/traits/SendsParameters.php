@@ -8,33 +8,33 @@ use Syntax\LaravelSocialIntegration\Modules\gmail\services\Mail;
 
 trait SendsParameters
 {
-    private array $parameters = [];
+    public array $parameters = [];
 
     public string $id;
 
     public string $threadId;
 
-    private string $message;
+    public string $message;
 
-    private string|null $subject;
+    public string|null $subject;
 
-    private string $from;
+    public string $from;
 
-    private string|null $nameFrom;
+    public string|null $nameFrom;
 
-    private string|array $to;
+    public string|array $to;
 
-    private string|null $nameTo;
+    public string|null $nameTo;
 
-    private array|string|null $cc;
+    public array|string|null $cc;
 
-    private string|null $nameCc;
+    public string|null $nameCc;
 
-    private array|string|null $bcc;
+    public array|string|null $bcc;
 
-    private string|null $nameBcc;
+    public string|null $nameBcc;
 
-    private array $attachments = [];
+    public array $attachments = [];
 
     public int|null $internalDate;
 

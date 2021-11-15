@@ -1,35 +1,30 @@
 <?php
 namespace Syntax\LaravelSocialIntegration\Modules\gmail\services;
 
-use Google_Client;
+use Google\Service\Gmail;
 use Google_Service_Gmail;
 use Google_Service_Gmail_Message;
 use Google_Service_Gmail_MessagePart;
+use Illuminate\Support\Facades\Log;
 use Swift_Message;
 use Illuminate\Support\Collection;
-use Syntax\LaravelSocialIntegration\Modules\gmail\traits\Configurable;
 use Syntax\LaravelSocialIntegration\Modules\gmail\traits\HasHeaders;
 use Syntax\LaravelSocialIntegration\Modules\gmail\traits\SendsParameters;
 
-class Mail extends Google_Client
+class Mail extends GmailConnection
 {
-
-    use Configurable;
     use SendsParameters, HasHeaders;
 
     public Google_Service_Gmail_MessagePart $payload;
 
     public collection $parts;
 
-    public Google_Service_Gmail $service;
 
     public function __construct(Google_Service_Gmail_Message $message = null)
     {
-        parent::__construct($this->getConfigs());
-
-        $this->configApi();
 
         $this->service = new Google_Service_Gmail($this);
+        parent::__construct();
 
         if (!is_null($message)) {
             $this->setMessage($message);
@@ -151,8 +146,8 @@ class Mail extends Google_Client
         $this->labels = $message->getLabelIds();
         $this->size = $message->getSizeEstimate();
         $this->threadId = $message->getThreadId();
-        $this->payload = $message->getPayload();
-        if ($this->payload) {
+        if ($message->getPayload()) {
+            $this->payload = $message->getPayload();
             $this->parts = collect($this->payload->getParts());
         }
     }
