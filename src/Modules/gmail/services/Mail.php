@@ -4,15 +4,14 @@ namespace Syntax\LaravelSocialIntegration\Modules\gmail\services;
 use Google_Service_Gmail;
 use Google_Service_Gmail_Message;
 use Google_Service_Gmail_MessagePart;
-use Swift_Attachment;
-use Swift_Message;
 use Illuminate\Support\Collection;
 use Syntax\LaravelSocialIntegration\Modules\gmail\traits\HasHeaders;
+use Syntax\LaravelSocialIntegration\Modules\gmail\traits\Replyable;
 use Syntax\LaravelSocialIntegration\Modules\gmail\traits\SendsParameters;
 
 class Mail extends GmailConnection
 {
-    use SendsParameters, HasHeaders;
+    use SendsParameters, HasHeaders, Replyable;
 
     public Google_Service_Gmail_MessagePart $payload;
 
@@ -93,35 +92,35 @@ class Mail extends GmailConnection
     }
 
     /**
-     * @return Google_Service_Gmail_Message
+     * Returns the subject of the email
+     *
+     * @return array|string
      */
-    private function getMessageBody(): Google_Service_Gmail_Message
+    public function getReplyTo()
     {
-        $body = new Google_Service_Gmail_Message();
-        // Create the message
-        $message = (new Swift_Message());
-        $message
-            ->setSubject($this->subject)
-            ->setFrom($this->from, $this->nameFrom)
-            ->setTo($this->to, $this->nameTo)
-            ->setCc($this->cc, $this->nameCc)
-            ->setBcc($this->bcc, $this->nameBcc)
-            ->setBody($this->message, 'text/html')
-            ->setPriority(2);
+        $replyTo = $this->getHeader('Reply-To');
 
-        foreach ($this->attachments as $key => $file) {
-            $message
-                ->attach(Swift_Attachment::fromPath($file[$key]['file_url']));
-        }
-
-        $body->setRaw($this->base64_encode($message->toString()));
-
-        return $body;
+        return $this->getFrom($replyTo ? $replyTo : $this->getHeader('From'));
     }
 
-    private function base64_encode(string $data): string
+    /**
+     * Returns thread ID of the email
+     *
+     * @return string
+     */
+    public function getThreadId()
     {
-        return rtrim(strtr(base64_encode($data), ['+' => '-', '/' => '_']), '=');
+        return $this->threadId;
+    }
+
+    /**
+     * Gets the user email from the config file
+     *
+     * @return mixed|null
+     */
+    public function getUser()
+    {
+        return $this->config('email');
     }
 
     /**
