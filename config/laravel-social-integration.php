@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Attachment;
+
 return [
     'default' => ['gmail', 'outlook'],
 
@@ -51,4 +53,9 @@ return [
             'allow_json_encrypt' => env('GOOGLE_ALLOW_JSON_ENCRYPT', false),
         ],
     ],
+
+    'attachments' => [
+        'store_locally' => false,
+        'attachment_model' => Attachment::class
+    ]
 ];

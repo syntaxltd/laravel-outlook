@@ -1,11 +1,10 @@
 <?php
 namespace Syntax\LaravelSocialIntegration\Modules\gmail\services;
 
-use Google\Service\Gmail;
 use Google_Service_Gmail;
 use Google_Service_Gmail_Message;
 use Google_Service_Gmail_MessagePart;
-use Illuminate\Support\Facades\Log;
+use Swift_Attachment;
 use Swift_Message;
 use Illuminate\Support\Collection;
 use Syntax\LaravelSocialIntegration\Modules\gmail\traits\HasHeaders;
@@ -59,9 +58,9 @@ class Mail extends GmailConnection
      * @param string|null $email
      * @return array
      */
-    public function getFrom(string|null $email = null)
+    public function getFrom(string|null $email = null): array
     {
-        $from = $email ? $email : $this->getHeader('From');
+        $from = $email ?: $this->getHeader('From');
 
         preg_match('/<(.*)>/', $from, $matches);
 
@@ -110,6 +109,11 @@ class Mail extends GmailConnection
             ->setBody($this->message, 'text/html')
             ->setPriority(2);
 
+        foreach ($this->attachments as $key => $file) {
+            $message
+                ->attach(Swift_Attachment::fromPath($file[$key]['file_url']));
+        }
+
         $body->setRaw($this->base64_encode($message->toString()));
 
         return $body;
@@ -125,7 +129,7 @@ class Mail extends GmailConnection
      *
      * @return self
      */
-    public function send()
+    public function send(): static
     {
         $body = $this->getMessageBody();
 

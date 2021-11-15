@@ -3,8 +3,11 @@
 
 namespace Syntax\LaravelSocialIntegration\Modules\gmail\traits;
 
+use Exception;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Syntax\LaravelSocialIntegration\Modules\gmail\services\Mail;
+use Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException;
 
 trait SendsParameters
 {
@@ -34,7 +37,7 @@ trait SendsParameters
 
     public string|null $nameBcc;
 
-    public array $attachments = [];
+    public array $attachments;
 
     public int|null $internalDate;
 
@@ -59,7 +62,7 @@ trait SendsParameters
      *
      * @param  string|null  $name
      *
-     * @return Mail
+     * @return SendsParameters
      */
     public function to(array|string $to, string|null $name = null): static
     {
@@ -82,7 +85,7 @@ trait SendsParameters
      *
      * @param  string|null  $name
      *
-     * @return Mail
+     * @return SendsParameters
      */
     public function cc(array|string|null $cc, string|null $name = null): static
     {
@@ -154,7 +157,7 @@ trait SendsParameters
      *
      * @param  string|null  $name
      *
-     * @return Mail
+     * @return SendsParameters
      */
     public function bcc(array|string|null $bcc, string|null $name = null): static
     {
@@ -167,7 +170,7 @@ trait SendsParameters
     /**
      * @param  string  $subject
      *
-     * @return Mail
+     * @return SendsParameters
      */
     public function subject(string $subject): static
     {
@@ -179,7 +182,7 @@ trait SendsParameters
     /**
      * @param  string  $message
      *
-     * @return Mail
+     * @return SendsParameters
      */
     public function message(string $message): static
     {
@@ -188,4 +191,17 @@ trait SendsParameters
         return $this;
     }
 
+    /**
+     * Attaches new file to the email from the Storage folder
+     *
+     * @param  array  $files  comma separated of files
+     *
+     * @return SendsParameters
+     * @throws Exception
+     */
+    public function attach(...$files): static
+    {
+        $this->attachments = $files;
+        return $this;
+    }
 }
