@@ -4,7 +4,9 @@
 namespace Syntax\LaravelSocialIntegration\Modules\gmail\traits;
 
 
+use Exception;
 use Google_Service_Gmail_Message;
+use Illuminate\Support\Facades\Log;
 use Swift_Attachment;
 use Swift_Message;
 use Syntax\LaravelSocialIntegration\Modules\gmail\services\Mail;
@@ -14,18 +16,15 @@ trait Replyable
 
     use SendsParameters, HasHeaders;
 
-    private $swiftMessage;
-
     public function __construct()
     {
-        $this->swiftMessage = new Swift_Message();
     }
     /**
      * @param  array  $parameters
      *
      * @return Replyable
      */
-    public function optionalParameters(array $parameters)
+    public function optionalParameters(array $parameters): static
     {
         $this->parameters = $parameters;
 
@@ -36,12 +35,12 @@ trait Replyable
      * Reply to a specific email
      *
      * @return Mail
-     * @throws \Exception
+     * @throws Exception
      */
-    public function reply()
+    public function reply(): Mail
     {
         if (!$this->getId()) {
-            throw new \Exception('This is a new email. Use send().');
+            throw new Exception('This is a new email. Use send().');
         }
 
         $this->setReplyThread();
@@ -72,9 +71,10 @@ trait Replyable
      * @param  string  $header
      * @param  string  $value
      */
-    public function setHeader($header, $value)
+    public function setHeader(string $header, string $value)
     {
-        $headers = $this->swiftMessage->getHeaders();
+        $swiftMessage = new Swift_Message();
+        $headers = $swiftMessage->getHeaders();
 
         $headers->addTextHeader($header, $value);
 
@@ -97,12 +97,15 @@ trait Replyable
         }
     }
 
+    /**
+     * @throws Exception
+     */
     private function setReplyFrom()
     {
         if (!$this->from) {
             $this->from = $this->getUser();
             if(!$this->from) {
-                throw new \Exception('Reply from is not defined');
+                throw new Exception('Reply from is not defined');
             }
         }
     }
@@ -116,11 +119,12 @@ trait Replyable
     /**
      * @return Google_Service_Gmail_Message
      */
-    private function getMessageBody()
+    private function getMessageBody(): Google_Service_Gmail_Message
     {
         $body = new Google_Service_Gmail_Message();
 
-        $this->swiftMessage
+        $swiftMessage = new Swift_Message();
+        $swiftMessage
             ->setSubject($this->subject)
             ->setFrom($this->from, $this->nameFrom)
             ->setTo($this->to, $this->nameTo)
@@ -129,18 +133,18 @@ trait Replyable
             ->setBody($this->message, 'text/html')
             ->setPriority('2');
 
-        foreach ($this->attachments as $file) {
-            $this->swiftMessage
-                ->attach(Swift_Attachment::fromPath($file));
-        }
+            foreach ($this->attachments as $file) {
+                $swiftMessage
+                    ->attach(Swift_Attachment::fromPath($file));
+            }
 
-        $body->setRaw($this->base64_encode($this->swiftMessage->toString()));
+        $body->setRaw($this->base64_encode($swiftMessage->toString()));
 
         return $body;
 
     }
 
-    private function base64_encode($data)
+    private function base64_encode($data): string
     {
         return rtrim(strtr(base64_encode($data), ['+' => '-', '/' => '_']), '=');
     }
