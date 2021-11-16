@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Provider\GenericProvider;
 use League\OAuth2\Client\Token\AccessToken;
+use Microsoft\Graph\Graph;
+use Microsoft\Graph\Model\User;
 use Syntax\LaravelSocialIntegration\Contracts\SocialClientAuth;
 use Syntax\LaravelSocialIntegration\Exceptions\InvalidStateException;
 use Syntax\LaravelSocialIntegration\Models\SocialAccessToken;
@@ -71,8 +73,25 @@ class AuthClient implements SocialClientAuth
                 'code' => $authCode,
             ]);
 
-            $this->saveToken($accessToken);
+            $graph = new Graph();
+            $graph->setAccessToken($accessToken->getToken());
+            $user = $graph->createRequest('GET', '/me?$select=userPrincipalName')
+                ->setReturnType(User::class)
+                ->execute();
+
+            $this->saveToken($accessToken, $user->getMail() ?? $user->getUserPrincipalName());
         }
+    }
+
+    private function saveToken(AccessToken $accessToken, string $email): SocialAccessToken|Model
+    {
+        return SocialAccessToken::query()->updateOrCreate(['partner_user_id' => auth('partneruser')->id()], [
+            'access_token' => $accessToken->getToken(),
+            'refresh_token' => $accessToken->getRefreshToken(),
+            'expires_at' => $accessToken->getExpires(),
+            'type' => 'Bearer',
+            'email' => $email,
+        ]);
     }
 
     public function clearTokens(): void
@@ -105,7 +124,7 @@ class AuthClient implements SocialClientAuth
                 ]);
 
                 // Store the new values
-                return $this->saveToken($newToken)->access_token;
+                return $this->saveToken($newToken, $accessToken->email)->access_token;
             } catch (IdentityProviderException $e) {
                 return '';
             }
@@ -113,15 +132,5 @@ class AuthClient implements SocialClientAuth
 
         // Token is still valid, just return it
         return $accessToken->access_token;
-    }
-
-    private function saveToken(AccessToken $accessToken): SocialAccessToken|Model
-    {
-        return SocialAccessToken::query()->updateOrCreate(['partner_user_id' => auth('partneruser')->id()], [
-            'access_token' => $accessToken->getToken(),
-            'refresh_token' => $accessToken->getRefreshToken(),
-            'expires_at' => $accessToken->getExpires(),
-            'type' => 'Bearer',
-        ]);
     }
 }

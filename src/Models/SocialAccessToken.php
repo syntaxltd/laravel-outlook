@@ -9,7 +9,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $refresh_token
  * @property string|null $access_token
  * @property int|null $expires_at
- * @property int id
+ * @property int $id
+ * @property string $email
  */
 class SocialAccessToken extends Model
 {

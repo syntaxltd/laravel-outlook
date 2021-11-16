@@ -3,18 +3,15 @@
 
 namespace Syntax\LaravelSocialIntegration\Modules\gmail;
 
-use App\Models\PartnerUser;
 use Google_Service_Gmail;
 use Google_Service_Gmail_Profile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Syntax\LaravelSocialIntegration\Contracts\SocialClientAuth;
 use Syntax\LaravelSocialIntegration\Exceptions\InvalidStateException;
 use Syntax\LaravelSocialIntegration\Models\SocialAccessToken;
 use Syntax\LaravelSocialIntegration\Modules\gmail\traits\Configurable;
 use Throwable;
-use function Safe\base64_decode;
 
 class AuthClient extends \Google_Client implements SocialClientAuth
 {
@@ -54,25 +51,23 @@ class AuthClient extends \Google_Client implements SocialClientAuth
 
         throw_if(is_null($code), new InvalidStateException('No access token.'));
 
-         $accessToken = $this->fetchAccessTokenWithAuthCode($code);
+        $accessToken = $this->fetchAccessTokenWithAuthCode($code);
 
-         parent::setAccessToken($accessToken);
+        parent::setAccessToken($accessToken);
         $me = $this->getProfile();
         if (property_exists($me, 'emailAddress')) {
             $accessToken['email'] = $me->emailAddress;
         }
 
-         SocialAccessToken::query()->updateOrCreate(
-             [
-                 'partner_user_id' => Auth::id(),
-                 'type' => 'gmail',
-             ], [
-             'access_token' => $accessToken['access_token'],
-             'refresh_token' => $accessToken['refresh_token'],
-             'expires_in' => $accessToken['expires_in'],
-             'email' => $accessToken['email']
-         ]);
-
+        SocialAccessToken::query()->updateOrCreate([
+            'partner_user_id' => auth('partneruser')->id(),
+            'type' => 'gmail',
+        ], [
+            'access_token' => $accessToken['access_token'],
+            'refresh_token' => $accessToken['refresh_token'],
+            'expires_in' => $accessToken['expires_in'],
+            'email' => $accessToken['email']
+        ]);
     }
 
     /**
