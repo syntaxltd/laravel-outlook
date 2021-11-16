@@ -42,9 +42,14 @@ class LaravelOutlook implements SocialClient
     public function send(Request $request): void
     {
         $message = (new Mail)->setSubject($request->input('subject'))
-            ->setContent($request->input('content'))
-            ->setRecipients($request->input('recipients'));
-
+            ->setContent($request->input('message'))
+            ->setRecipients(collect($request->input('contact'))->map(function ($contact) {
+                return [
+                    'name' => $contact['name'],
+                    'address' => $contact['email'],
+                ];
+            })->toArray());
+        
         $this->getGraphClient()->createRequest('POST', '/me/sendMail')
             ->attachBody($message->getPayload())->execute();
     }
