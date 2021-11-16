@@ -65,7 +65,7 @@ class LaravelOutlook implements SocialClient
     {
         $message = (new Mail)->setSubject($request->input('subject'))
             ->setContentType('HTML')
-            ->setContent($request->input('message'))
+            ->setContent($request->input('content'))
             ->setRecipients(collect($request->input('contact'))->map(function ($contact) {
                 return [
                     'name' => $contact['name'],
