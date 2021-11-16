@@ -8,6 +8,7 @@ use Google_Service_Gmail_Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Syntax\LaravelSocialIntegration\Contracts\SocialClient;
 use Syntax\LaravelSocialIntegration\Models\SocialAccessMail;
 use Syntax\LaravelSocialIntegration\Models\SocialAccessToken;
@@ -35,7 +36,7 @@ class LaravelGmail extends GmailConnection implements SocialClient
     public function all(): Collection
     {
         $client = SocialAccessToken::query()->where('partner_user_id', Auth::id())->where('type', 'gmail')->pluck('id');
-        
+
         return SocialAccessMail::query()->whereIn('token_id', $client)->get();
     }
 
@@ -64,6 +65,8 @@ class LaravelGmail extends GmailConnection implements SocialClient
         }
         $mail->send();
 
+        $this->storeMail($mail, $request);
+
         return $mail;
     }
 
@@ -72,5 +75,31 @@ class LaravelGmail extends GmailConnection implements SocialClient
         return collect($request->input('contact'))->filter()->map(function ($item) {
             return $item['email'];
         })->toArray();
+    }
+
+    private function storeMail(Mail $mail, Request $request): void
+    {
+        /** @var SocialAccessToken $token */
+        $token = SocialAccessToken::query()->where([
+            'partner_user_id' => auth('partneruser')->id(),
+            'type' => 'gmail',
+        ])->first();
+
+        $email = new SocialAccessMail;
+        $email->parentable_id = $request->input('parent.id');
+        $email->parentable_type = 'App\Models\\' . Str::ucfirst($request->input('parent.type'));
+        $email->email_id = $mail->id;
+        $email->thread_id = $mail->threadId;
+        $email->token_id = $token->id;
+        $email->data = [
+            'to' => $request->input('contact'),
+            'from' => $token->email,
+            'subject' => $mail->subject,
+            'message' => $mail->message,
+            'labels' => $mail->labels
+        ];
+        $email->save();
+
+        $email->saveAssociations($request);
     }
 }

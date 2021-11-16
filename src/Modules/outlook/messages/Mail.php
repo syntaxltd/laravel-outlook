@@ -18,6 +18,8 @@ class Mail
 
     private bool $saveToSentItems = true;
 
+    private string $contentType = 'Text';
+
     /**
      * @param string $subject
      * @return Mail
@@ -36,7 +38,7 @@ class Mail
     public function setContent(string $content): self
     {
         $this->content = [
-            'contentType' => 'Text',
+            'contentType' => $this->contentType,
             'content' => $content,
         ];
 
@@ -106,6 +108,17 @@ class Mail
     public function setSaveToSentItems(bool $saveToSentItems): self
     {
         $this->saveToSentItems = $saveToSentItems;
+
+        return $this;
+    }
+
+    /**
+     * @param string $contentType
+     * @return Mail
+     */
+    public function setContentType(string $contentType): self
+    {
+        $this->contentType = $contentType;
 
         return $this;
     }
