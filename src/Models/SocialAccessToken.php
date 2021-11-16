@@ -20,6 +20,6 @@ class SocialAccessToken extends Model
      * @var array
      */
     protected $fillable = [
-        'access_token', 'refresh_token', 'type', 'expires_at', 'partner_user_id',
+        'access_token', 'refresh_token', 'type', 'expires_at', 'partner_user_id','email'
     ];
 }
