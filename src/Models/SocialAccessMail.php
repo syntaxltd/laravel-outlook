@@ -6,25 +6,23 @@ use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Deal;
 use App\Models\Property;
-use hollodotme\FastCGI\RequestContents\JsonData;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Collection;
 
 /**
-* @property Collection $companies
-* @property Collection $contacts
-* @property Collection $properties
-* @property Collection $deals
+ * @property Collection $companies
+ * @property Collection $contacts
+ * @property Collection $properties
+ * @property Collection $deals
  * @property int $token_id
  * @property string $email_id
  * @property string $thread_id
- * @property JsonData $data
+ * @property string|array $data
  * @property int $parentable_id
  * @property string $parentable_type
  * */
-
 class SocialAccessMail extends Model
 {
     /**

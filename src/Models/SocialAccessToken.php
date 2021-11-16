@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $refresh_token
  * @property string|null $access_token
  * @property int|null $expires_at
+ * @property int id
  */
 class SocialAccessToken extends Model
 {
@@ -20,6 +21,6 @@ class SocialAccessToken extends Model
      * @var array
      */
     protected $fillable = [
-        'access_token', 'refresh_token', 'type', 'expires_at', 'partner_user_id','email'
+        'access_token', 'refresh_token', 'type', 'expires_at', 'partner_user_id', 'email'
     ];
 }
