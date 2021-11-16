@@ -57,8 +57,7 @@ class AuthClient implements SocialClientAuth
         // Validate the state
         $expectedState = session('oauthState');
         $request->session()->forget('oauthState');
-        $providedState = $request->query('state');
-//        dd($expectedState, $providedState);
+        $providedState = $request->input('state');
 
         throw_if(!isset($expectedState) || !isset($providedState) || $expectedState != $providedState, new InvalidStateException);
 
