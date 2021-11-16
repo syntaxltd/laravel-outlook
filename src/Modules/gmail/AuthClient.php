@@ -4,6 +4,8 @@
 namespace Syntax\LaravelSocialIntegration\Modules\gmail;
 
 use App\Models\PartnerUser;
+use Google_Service_Gmail;
+use Google_Service_Gmail_Profile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -55,6 +57,11 @@ class AuthClient extends \Google_Client implements SocialClientAuth
          $accessToken = $this->fetchAccessTokenWithAuthCode($code);
 
          parent::setAccessToken($accessToken);
+        $me = $this->getProfile();
+        if (property_exists($me, 'emailAddress')) {
+            $accessToken['email'] = $me->emailAddress;
+        }
+
          SocialAccessToken::query()->updateOrCreate(
              [
                  'partner_user_id' => Auth::id(),
@@ -63,8 +70,21 @@ class AuthClient extends \Google_Client implements SocialClientAuth
              'access_token' => $accessToken['access_token'],
              'refresh_token' => $accessToken['refresh_token'],
              'expires_in' => $accessToken['expires_in'],
+             'email' => $accessToken['email']
          ]);
 
+    }
+
+    /**
+     * Gets user profile from Gmail
+     *
+     * @return Google_Service_Gmail_Profile
+     */
+    public function getProfile(): Google_Service_Gmail_Profile
+    {
+        $service = new Google_Service_Gmail($this);
+
+        return $service->users->getProfile('me');
     }
 
     public function clearTokens(): void

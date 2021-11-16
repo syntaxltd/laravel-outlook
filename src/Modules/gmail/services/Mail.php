@@ -7,6 +7,7 @@ use Google_Service_Gmail_Message;
 use Google_Service_Gmail_MessagePart;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Syntax\LaravelSocialIntegration\Models\SocialAccessToken;
 use Syntax\LaravelSocialIntegration\Modules\gmail\traits\HasHeaders;
 use Syntax\LaravelSocialIntegration\Modules\gmail\traits\Replyable;
 use Syntax\LaravelSocialIntegration\Modules\gmail\traits\SendsParameters;
@@ -122,7 +123,9 @@ class Mail extends GmailConnection
      */
     public function getUser(): mixed
     {
-        return PartnerUser::find(Auth::id())->email;
+        /** @var SocialAccessToken $user */
+        $user = SocialAccessToken::Where('partner_user_id', Auth::id())->where('type', 'gmail')->first();
+        return $user->email;
     }
 
     /**
