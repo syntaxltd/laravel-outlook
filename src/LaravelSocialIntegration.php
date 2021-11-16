@@ -5,7 +5,7 @@ namespace Syntax\LaravelSocialIntegration;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Syntax\LaravelSocialIntegration\Exceptions\InvalidClientException;
-use Syntax\LaravelSocialIntegration\Models\SocialAccessEmail;
+use Syntax\LaravelSocialIntegration\Models\SocialAccessMail;
 use Syntax\LaravelSocialIntegration\Models\SocialAccessToken;
 use Syntax\LaravelSocialIntegration\Modules\gmail\LaravelGmail;
 use Syntax\LaravelSocialIntegration\Modules\outlook\LaravelOutlook;

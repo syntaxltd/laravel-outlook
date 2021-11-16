@@ -37,7 +37,7 @@ trait SendsParameters
 
     public string|null $nameBcc;
 
-    public array $attachments;
+    public array $attachments = [];
 
     public int|null $internalDate;
 

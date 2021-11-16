@@ -1,10 +1,12 @@
 <?php
 namespace Syntax\LaravelSocialIntegration\Modules\gmail\services;
 
+use App\Models\PartnerUser;
 use Google_Service_Gmail;
 use Google_Service_Gmail_Message;
 use Google_Service_Gmail_MessagePart;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Syntax\LaravelSocialIntegration\Modules\gmail\traits\HasHeaders;
 use Syntax\LaravelSocialIntegration\Modules\gmail\traits\Replyable;
 use Syntax\LaravelSocialIntegration\Modules\gmail\traits\SendsParameters;
@@ -96,11 +98,11 @@ class Mail extends GmailConnection
      *
      * @return array|string
      */
-    public function getReplyTo()
+    public function getReplyTo(): array|string
     {
         $replyTo = $this->getHeader('Reply-To');
 
-        return $this->getFrom($replyTo ? $replyTo : $this->getHeader('From'));
+        return $this->getFrom($replyTo ?: $this->getHeader('From'));
     }
 
     /**
@@ -116,11 +118,11 @@ class Mail extends GmailConnection
     /**
      * Gets the user email from the config file
      *
-     * @return mixed|null
+     * @return mixed
      */
-    public function getUser()
+    public function getUser(): mixed
     {
-        return $this->config('email');
+        return PartnerUser::find(Auth::id())->email;
     }
 
     /**
