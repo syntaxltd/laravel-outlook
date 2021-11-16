@@ -58,7 +58,7 @@ class LaravelGmail extends GmailConnection implements SocialClient
         $mail->cc($request->input('cc'));
         $mail->bcc($request->input('bcc'));
         $mail->subject($request->input('subject'));
-        $mail->message($request->input('message'));
+        $mail->message($request->input('content'));
 
         if (!is_null($request->input('attachments'))) {
             $mail->attach($request->input('attachments'));
@@ -70,9 +70,26 @@ class LaravelGmail extends GmailConnection implements SocialClient
         return $mail;
     }
 
+
+    /**
+     * Sends a new email
+     *
+     * @param Request $request
+     * @return Mail
+     * @throws Throwable
+     */
+    public function reply(Request $request): Mail
+    {
+        $mailable = $this->get($request->input('id'));
+        $mail = new Mail($mailable);
+        $mail->reply();
+
+        return $mail;
+    }
+
     private function getContacts(Request $request): array
     {
-        return collect($request->input('contact'))->filter()->map(function ($item) {
+        return collect($request->input('recipients'))->filter()->map(function ($item) {
             return $item['email'];
         })->toArray();
     }
