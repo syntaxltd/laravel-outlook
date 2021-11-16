@@ -42,7 +42,6 @@ trait Replyable
         if (!$this->getId()) {
             throw new Exception('This is a new email. Use send().');
         }
-
         $this->setReplyThread();
         $this->setReplySubject();
         $this->setReplyTo();
