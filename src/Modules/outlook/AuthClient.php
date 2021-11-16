@@ -62,26 +62,22 @@ class AuthClient implements SocialClientAuth
         throw_if(!isset($expectedState) || !isset($providedState) || $expectedState != $providedState, new InvalidStateException);
 
         // Authorization code should be in the "code" query param
-        $authCode = $request->query('code');
+        $authCode = $request->input('code');
         if (isset($authCode)) {
-            try {
-                /**
-                 * @var AccessToken $accessToken
-                 */
-                $accessToken = $this->getOAuthClient()->getAccessToken('authorization_code', [
-                    'code' => $authCode,
-                ]);
+            /**
+             * @var AccessToken $accessToken
+             */
+            $accessToken = $this->getOAuthClient()->getAccessToken('authorization_code', [
+                'code' => $authCode,
+            ]);
 
-                $this->saveToken($accessToken);
-            } catch (IdentityProviderException $exception) {
-                throw $exception;
-            }
+            $this->saveToken($accessToken);
         }
     }
 
     private function saveToken(AccessToken $accessToken): SocialAccessToken|Model
     {
-        return SocialAccessToken::query()->updateOrCreate(['partner_user_id' => '8da62473-1897-429a-9b76-1285c34fe4c7'], [
+        return SocialAccessToken::query()->updateOrCreate(['partner_user_id' => auth('partneruser')->id()], [
             'access_token' => $accessToken->getToken(),
             'refresh_token' => $accessToken->getRefreshToken(),
             'expires_at' => $accessToken->getExpires(),
@@ -91,7 +87,7 @@ class AuthClient implements SocialClientAuth
 
     public function clearTokens(): void
     {
-        SocialAccessToken::query()->where('partner_user_id', '8da62473-1897-429a-9b76-1285c34fe4c7')->delete();
+        SocialAccessToken::query()->where('partner_user_id', auth('partneruser')->id())->delete();
     }
 
     /**
@@ -100,7 +96,7 @@ class AuthClient implements SocialClientAuth
     public function getToken(): string
     {
         /** @var SocialAccessToken|null $accessToken */
-        $accessToken = SocialAccessToken::query()->where('partner_user_id', '8da62473-1897-429a-9b76-1285c34fe4c7')->first();
+        $accessToken = SocialAccessToken::query()->where('partner_user_id', auth('partneruser')->id())->first();
 
         // Check if tokens exist
         if (is_null($accessToken)) {
