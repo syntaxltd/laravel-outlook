@@ -2,7 +2,6 @@
 
 namespace Syntax\LaravelSocialIntegration;
 
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Safe\Exceptions\DatetimeException;
 use function Safe\date;
@@ -19,7 +18,7 @@ class LaravelSocialIntegrationServiceProvider extends ServiceProvider
     protected string $namespace = 'Syntax\Http\Controller;s';
 
     /**
-     * Bootstrap any package services.
+     * Bootstrap any package messages.
      *
      * @return void
      * @throws DatetimeException
@@ -41,7 +40,7 @@ class LaravelSocialIntegrationServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register any application services.
+     * Register any application messages.
      *
      * @return void
      */
@@ -50,28 +49,5 @@ class LaravelSocialIntegrationServiceProvider extends ServiceProvider
         $this->app->bind('laravel-social', function ($app, $client) {
             return LaravelSocialIntegration::service($client['client']);
         });
-        $this->registerRoutes();
-    }
-
-    /**
-     * Define the "web" routes for the package.
-     *
-     * These routes all receive session state, CSRF protection, etc.
-     *
-     * @return void
-     */
-    protected function registerRoutes()
-    {
-        Route::group($this->routeConfiguration(), function () {
-            $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
-        });
-    }
-
-    protected function routeConfiguration(): array
-    {
-        return [
-            'prefix' => config('laravel-social-integration.routes.prefix'),
-            'middleware' => config('laravel-social-integration.routes.middleware'),
-        ];
     }
 }

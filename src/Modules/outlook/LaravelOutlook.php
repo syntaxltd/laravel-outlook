@@ -2,26 +2,24 @@
 
 namespace Syntax\LaravelSocialIntegration\Modules\outlook;
 
-use GuzzleHttp\Exception\GuzzleException;
+use Illuminate\Http\Request;
 use Microsoft\Graph\Exception\GraphException;
 use Microsoft\Graph\Graph;
-use Microsoft\Graph\Model\User;
+use Microsoft\Graph\Model\ChatMessage;
+use Syntax\LaravelSocialIntegration\Contracts\SocialClient;
+use Syntax\LaravelSocialIntegration\Modules\outlook\messages\Mail;
 use Throwable;
 
-class LaravelOutlook
+class LaravelOutlook implements SocialClient
 {
     /**
      * @throws Throwable
      * @throws GraphException
-     * @throws GuzzleException
      */
-    public function fetchMessages()
+    public function all(): mixed
     {
-        /** @var User $user */
-        $user = $this->getGraphClient()->createRequest('GET', '/me?$select=displayName,mail,mailboxSettings,userPrincipalName')
-            ->setReturnType(User::class)->execute();
-
-        return $user;
+        return $this->getGraphClient()->createRequest('GET', '/me/messages?$select=*')
+            ->setReturnType(ChatMessage::class)->execute();
     }
 
     /**
@@ -35,5 +33,19 @@ class LaravelOutlook
     public function auth(): AuthClient
     {
         return new AuthClient;
+    }
+
+    /**
+     * @throws GraphException
+     * @throws Throwable
+     */
+    public function send(Request $request): void
+    {
+        $message = (new Mail)->setSubject($request->input('subject'))
+            ->setContent($request->input('content'))
+            ->setRecipients($request->input('recipients'));
+
+        $this->getGraphClient()->createRequest('POST', '/me/sendMail')
+            ->attachBody($message->getPayload())->execute();
     }
 }

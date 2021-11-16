@@ -39,13 +39,13 @@ class AuthClient implements SocialClientAuth
     public function getConfigs(): array
     {
         return [
-            'clientId' => config('laravel-social-integration.services.outlook.appId'),
-            'clientSecret' => config('laravel-social-integration.services.outlook.appSecret'),
-            'redirectUri' => config('laravel-social-integration.services.outlook.redirectUri'),
-            'urlAuthorize' => config('laravel-social-integration.services.outlook.authority') . config('laravel-social-integration.services.outlook.authorizeEndpoint'),
-            'urlAccessToken' => config('laravel-social-integration.services.outlook.authority') . config('laravel-social-integration.services.outlook.tokenEndpoint'),
+            'clientId' => config('laravel-social-integration.messages.outlook.appId'),
+            'clientSecret' => config('laravel-social-integration.messages.outlook.appSecret'),
+            'redirectUri' => config('laravel-social-integration.messages.outlook.redirectUri'),
+            'urlAuthorize' => config('laravel-social-integration.messages.outlook.authority') . config('laravel-social-integration.messages.outlook.authorizeEndpoint'),
+            'urlAccessToken' => config('laravel-social-integration.messages.outlook.authority') . config('laravel-social-integration.messages.outlook.tokenEndpoint'),
             'urlResourceOwnerDetails' => '',
-            'scopes' => config('laravel-social-integration.services.outlook.scopes'),
+            'scopes' => config('laravel-social-integration.messages.outlook.scopes'),
         ];
     }
 
@@ -73,16 +73,6 @@ class AuthClient implements SocialClientAuth
 
             $this->saveToken($accessToken);
         }
-    }
-
-    private function saveToken(AccessToken $accessToken): SocialAccessToken|Model
-    {
-        return SocialAccessToken::query()->updateOrCreate(['partner_user_id' => auth('partneruser')->id()], [
-            'access_token' => $accessToken->getToken(),
-            'refresh_token' => $accessToken->getRefreshToken(),
-            'expires_at' => $accessToken->getExpires(),
-            'type' => 'Bearer',
-        ]);
     }
 
     public function clearTokens(): void
@@ -123,5 +113,15 @@ class AuthClient implements SocialClientAuth
 
         // Token is still valid, just return it
         return $accessToken->access_token;
+    }
+
+    private function saveToken(AccessToken $accessToken): SocialAccessToken|Model
+    {
+        return SocialAccessToken::query()->updateOrCreate(['partner_user_id' => auth('partneruser')->id()], [
+            'access_token' => $accessToken->getToken(),
+            'refresh_token' => $accessToken->getRefreshToken(),
+            'expires_at' => $accessToken->getExpires(),
+            'type' => 'Bearer',
+        ]);
     }
 }

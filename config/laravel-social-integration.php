@@ -11,7 +11,7 @@ return [
         'middleware' => ['web'],
     ],
 
-    'services' => [
+    'messages' => [
         'outlook' => [
             'appId' => env('OAUTH_APP_ID', null),
 

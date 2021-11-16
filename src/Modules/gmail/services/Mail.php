@@ -1,4 +1,5 @@
 <?php
+
 namespace Syntax\LaravelSocialIntegration\Modules\gmail\services;
 
 use Google_Service_Gmail;
@@ -20,8 +21,8 @@ class Mail extends GmailConnection
 
     public function __construct(Google_Service_Gmail_Message $message = null)
     {
-
         $this->service = new Google_Service_Gmail($this);
+
         parent::__construct();
 
         if (!is_null($message)) {
@@ -31,13 +32,34 @@ class Mail extends GmailConnection
     }
 
     /**
-     * Returns ID of the email
+     * Sets data from mail
      *
-     * @return string
+     * @param Google_Service_Gmail_Message $message
      */
-    public function getId(): string
+    protected function setMessage(Google_Service_Gmail_Message $message): void
     {
-        return $this->id;
+        $this->id = $message->getId();
+        $this->internalDate = $message->getInternalDate();
+        $this->labels = $message->getLabelIds();
+        $this->size = $message->getSizeEstimate();
+        $this->threadId = $message->getThreadId();
+        if ($message->getPayload()) {
+            $this->payload = $message->getPayload();
+            $this->parts = collect($this->payload->getParts());
+        }
+    }
+
+    /**
+     * Sets the metadata from Mail when preloaded
+     */
+    protected function setMetadata(): void
+    {
+        $this->to = $this->getTo();
+        $from = $this->getFrom();
+        $this->from = $from['email'];
+        $this->nameFrom = $from['email'];
+
+        $this->subject = $this->getSubject();
     }
 
     /**
@@ -51,6 +73,7 @@ class Mail extends GmailConnection
 
         return $this->formatEmailList($allTo);
     }
+
     /**
      * Returns array of name and email of each recipient
      *
@@ -66,7 +89,7 @@ class Mail extends GmailConnection
         $name = preg_replace('/ <(.*)>/', '', $from);
 
         return [
-            'name'  => $name,
+            'name' => $name,
             'email' => $matches[1] ?? null,
         ];
     }
@@ -79,6 +102,16 @@ class Mail extends GmailConnection
     public function getSubject(): ?string
     {
         return $this->getHeader('Subject');
+    }
+
+    /**
+     * Returns ID of the email
+     *
+     * @return string
+     */
+    public function getId(): string
+    {
+        return $this->id;
     }
 
     /**
@@ -136,36 +169,4 @@ class Mail extends GmailConnection
 
         return $this;
     }
-
-    /**
-     * Sets data from mail
-     *
-     * @param Google_Service_Gmail_Message $message
-     */
-    protected function setMessage(Google_Service_Gmail_Message $message):void
-    {
-        $this->id = $message->getId();
-        $this->internalDate = $message->getInternalDate();
-        $this->labels = $message->getLabelIds();
-        $this->size = $message->getSizeEstimate();
-        $this->threadId = $message->getThreadId();
-        if ($message->getPayload()) {
-            $this->payload = $message->getPayload();
-            $this->parts = collect($this->payload->getParts());
-        }
-    }
-
-    /**
-     * Sets the metadata from Mail when preloaded
-     */
-    protected function setMetadata(): void
-    {
-        $this->to = $this->getTo();
-        $from = $this->getFrom();
-        $this->from = $from['email'];
-        $this->nameFrom = $from['email'];
-
-        $this->subject = $this->getSubject();
-    }
-
 }

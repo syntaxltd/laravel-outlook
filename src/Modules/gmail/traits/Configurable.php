@@ -17,17 +17,23 @@ trait Configurable
     public function getConfigs()
     {
         return [
-            'client_secret' => config('laravel-social-integration.services.gmail.client_secret'),
-            'client_id' => config('laravel-social-integration.services.gmail.client_id'),
-            'redirect_uri' => url(config('laravel-social-integration.services.gmail.redirect_url')),
-            'state' => config('laravel-social-integration.services.gmail.state') ?? null,
+            'client_secret' => config('laravel-social-integration.messages.gmail.client_secret'),
+            'client_id' => config('laravel-social-integration.messages.gmail.client_id'),
+            'redirect_uri' => url(config('laravel-social-integration.messages.gmail.redirect_url')),
+            'state' => config('laravel-social-integration.messages.gmail.state') ?? null,
         ];
     }
 
+    public abstract function setScopes($scopes);
+
+    public abstract function setAccessType($type);
+
+    public abstract function setApprovalPrompt($approval);
+
     private function configApi()
     {
-        $type = config('laravel-social-integration.services.gmail.access_type');
-        $approval_prompt = config('laravel-social-integration.services.gmail.approval_prompt');
+        $type = config('laravel-social-integration.messages.gmail.access_type');
+        $approval_prompt = config('laravel-social-integration.messages.gmail.approval_prompt');
 
         $this->setScopes($this->getUserScopes());
 
@@ -35,9 +41,6 @@ trait Configurable
 
         $this->setApprovalPrompt($approval_prompt);
     }
-
-    public abstract function setScopes($scopes);
-
 
     private function haveReadScope()
     {
@@ -53,7 +56,7 @@ trait Configurable
 
     private function mapScopes(): array
     {
-        $scopes = config('laravel-social-integration.services.gmail.scopes');
+        $scopes = config('laravel-social-integration.messages.gmail.scopes');
         $scopes = array_unique(array_filter($scopes));
         $mappedScopes = [];
 
@@ -83,9 +86,5 @@ trait Configurable
 
         return Arr::get($scopes, $scope);
     }
-
-    public abstract function setAccessType($type);
-
-    public abstract function setApprovalPrompt($approval);
 
 }
