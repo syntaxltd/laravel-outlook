@@ -8,7 +8,6 @@ use Google_Service_Gmail_Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 use Syntax\LaravelSocialIntegration\Contracts\SocialClient;
 use Syntax\LaravelSocialIntegration\Models\SocialAccessMail;
 use Syntax\LaravelSocialIntegration\Models\SocialAccessToken;
@@ -23,16 +22,6 @@ class LaravelGmail extends GmailConnection implements SocialClient
         return new AuthClient();
     }
 
-    /**
-     * @param string $id
-     *
-     * @return Google_Service_Gmail_Message
-     */
-    public function get(string $id): Google_Service_Gmail_Message
-    {
-        return $this->service->users_messages->get('me', $id);
-    }
-
     public function all(): Collection
     {
         $client = SocialAccessToken::query()->where('partner_user_id', Auth::id())->where('type', 'gmail')->pluck('id');
@@ -44,10 +33,10 @@ class LaravelGmail extends GmailConnection implements SocialClient
      * Sends a new email
      *
      * @param Request $request
-     * @return Mail
+     * @return array
      * @throws Throwable
      */
-    public function send(Request $request): Mail
+    public function send(Request $request): array
     {
         /** @var PartnerUser $user */
         $user = auth('partneruser')->user();
@@ -65,11 +54,20 @@ class LaravelGmail extends GmailConnection implements SocialClient
         }
         $mail->send();
 
-        $this->storeMail($mail, $request);
-
-        return $mail;
+        return [
+            'email_id' => $mail->getId(),
+            'thread_id' => $mail->getThreadId(),
+            'subject' => $mail->getSubject(),
+            'message' => $mail->message,
+        ];
     }
 
+    private function getContacts(Request $request): array
+    {
+        return collect($request->input('recipients'))->filter()->map(function ($item) {
+            return $item['email'];
+        })->toArray();
+    }
 
     /**
      * Sends a new email
@@ -87,36 +85,13 @@ class LaravelGmail extends GmailConnection implements SocialClient
         return $mail;
     }
 
-    private function getContacts(Request $request): array
+    /**
+     * @param string $id
+     *
+     * @return Google_Service_Gmail_Message
+     */
+    public function get(string $id): Google_Service_Gmail_Message
     {
-        return collect($request->input('recipients'))->filter()->map(function ($item) {
-            return $item['email'];
-        })->toArray();
-    }
-
-    private function storeMail(Mail $mail, Request $request): void
-    {
-        /** @var SocialAccessToken $token */
-        $token = SocialAccessToken::query()->where([
-            'partner_user_id' => auth('partneruser')->id(),
-            'type' => 'gmail',
-        ])->first();
-
-        $email = new SocialAccessMail;
-        $email->parentable_id = $request->input('parent.id');
-        $email->parentable_type = 'App\Models\\' . Str::ucfirst($request->input('parent.type'));
-        $email->email_id = $mail->id;
-        $email->thread_id = $mail->threadId;
-        $email->token_id = $token->id;
-        $email->data = [
-            'to' => $request->input('contact'),
-            'from' => $token->email,
-            'subject' => $mail->subject,
-            'message' => $mail->message,
-            'labels' => $mail->labels
-        ];
-        $email->save();
-
-        $email->saveAssociations($request);
+        return $this->service->users_messages->get('me', $id);
     }
 }
