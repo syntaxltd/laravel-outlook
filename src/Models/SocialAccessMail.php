@@ -32,6 +32,10 @@ class SocialAccessMail extends Model
      */
     public array $associables = ['properties', 'contacts', 'companies', 'deals'];
 
+    protected $casts = [
+        'data' => 'array'
+    ];
+
     /**
      *
      * @return array
