@@ -33,7 +33,8 @@ trait Replyable
     {
         $threadId = $this->getThreadId();
         if ($threadId) {
-            $this->setHeader('In-Reply-To', $this->getHeader('From'));
+            $this->setHeader('In-Reply-To', $this->getHeader('In-Reply-To') ?: $this->getHeader('From'));
+            $this->setHeader('Reference', $this->getHeader('Reference') ?: $this->getHeader('From'));
             $this->setHeader('Message-ID', $this->getHeader('Message-Id'));
         }
     }
@@ -144,7 +145,7 @@ trait Replyable
         $body = $this->getMessageBody();
         $body->setThreadId($this->getThreadId());
 
-        return new Mail($this->service->users_messages->send('me', $body, $this->parameters));
+        return new Mail($this->service->users_messages->send('me', $body));
     }
 
 

@@ -2,8 +2,6 @@
 
 namespace Syntax\LaravelSocialIntegration\Modules\gmail\services;
 
-use App\Models\PartnerUser;
-use Exception;
 use Google_Service_Gmail;
 use Google_Service_Gmail_Message;
 use Google_Service_Gmail_MessagePart;
@@ -47,7 +45,7 @@ class Mail extends GmailConnection
         $this->internalDate = $message->getInternalDate();
         $this->labels = $message->getLabelIds();
         $this->size = $message->getSizeEstimate();
-        $this->threadId = $message->getThreadId();;
+        $this->threadId = $message->getThreadId();
         $this->historyId = $message->getHistoryId();
         $this->payload = $this->get($message->getId())->getPayload();
         if ($this->payload) {
@@ -157,17 +155,27 @@ class Mail extends GmailConnection
      *
      * @return string
      */
-    public function getThreadId()
+    public function getThreadId(): string
     {
         return $this->threadId;
     }
 
     /**
+     * Returns thread ID of the email
+     *
+     * @return string|null
+     */
+    public function getHistoryId(): ?string
+    {
+        return $this->historyId;
+    }
+
+    /**
      * Gets the user email from the config file
      *
-     * @return mixed
+     * @return string
      */
-    public function getUser(): mixed
+    public function getUser(): string
     {
         /** @var SocialAccessToken $user */
         $user = SocialAccessToken::Where('partner_user_id', Auth::id())->where('type', 'gmail')->first();
