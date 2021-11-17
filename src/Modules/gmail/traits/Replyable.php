@@ -6,10 +6,8 @@ namespace Syntax\LaravelSocialIntegration\Modules\gmail\traits;
 
 use Exception;
 use Google_Service_Gmail_Message;
-use Illuminate\Support\Facades\Log;
 use Swift_Attachment;
 use Swift_Message;
-use Syntax\LaravelSocialIntegration\Modules\gmail\services\Mail;
 
 trait Replyable
 {
@@ -30,28 +28,6 @@ trait Replyable
 
         return $this;
     }
-
-    /**
-     * Reply to a specific email
-     *
-     * @return Mail
-     * @throws Exception
-     */
-    public function reply(): Mail
-    {
-        if (!$this->getId()) {
-            throw new Exception('This is a new email. Use send().');
-        }
-        $this->setReplyThread();
-        $this->setReplySubject();
-        $this->setReplyTo();
-        $this->setReplyFrom();
-        $body = $this->getMessageBody();
-        $body->setThreadId($this->getThreadId());
-
-        return new Mail($this->service->users_messages->send('me', $body, $this->parameters));
-    }
-
     private function setReplyThread()
     {
         $threadId = $this->getThreadId();

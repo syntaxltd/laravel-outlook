@@ -3,11 +3,13 @@
 namespace Syntax\LaravelSocialIntegration\Modules\gmail\services;
 
 use App\Models\PartnerUser;
+use Exception;
 use Google_Service_Gmail;
 use Google_Service_Gmail_Message;
 use Google_Service_Gmail_MessagePart;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Syntax\LaravelSocialIntegration\Models\SocialAccessToken;
 use Syntax\LaravelSocialIntegration\Modules\gmail\traits\HasHeaders;
 use Syntax\LaravelSocialIntegration\Modules\gmail\traits\Replyable;
@@ -45,9 +47,10 @@ class Mail extends GmailConnection
         $this->internalDate = $message->getInternalDate();
         $this->labels = $message->getLabelIds();
         $this->size = $message->getSizeEstimate();
-        $this->threadId = $message->getThreadId();
-        if ($message->getPayload()) {
-            $this->payload = $message->getPayload();
+        $this->threadId = $message->getThreadId();;
+        $this->historyId = $message->getHistoryId();
+        $this->payload = $this->get($message->getId())->getPayload();
+        if ($this->payload) {
             $this->parts = collect($this->payload->getParts());
         }
     }
@@ -59,10 +62,20 @@ class Mail extends GmailConnection
     {
         $this->to = $this->getTo();
         $from = $this->getFrom();
-        $this->from = $from['email'];
-        $this->nameFrom = $from['email'];
+        $this->from = $from['email'] ?: $from['name'];
+        $this->nameFrom = $from['name'];
 
         $this->subject = $this->getSubject();
+    }
+
+    /**
+     * @param string $id
+     *
+     * @return Google_Service_Gmail_Message
+     */
+    public function get(string $id): Google_Service_Gmail_Message
+    {
+        return $this->service->users_messages->get('me', $id);
     }
 
     /**
@@ -170,8 +183,34 @@ class Mail extends GmailConnection
     {
         $body = $this->getMessageBody();
 
-        $this->setMessage($this->service->users_messages->send('me', $body, $this->parameters));
+        $this->setMessage($this->service->users_messages->send('me', $body));
 
         return $this;
     }
+
+
+    /**
+     * Reply to a specific email
+     *
+     * @return Mail
+     * @throws Exception
+     */
+    public function reply(): Mail
+    {
+        if (!$this->getId()) {
+            throw new Exception('This is a new email. Use send().');
+        }
+
+        $this->setReplyThread();
+        $this->setReplySubject();
+        $this->setReplyTo();
+        $this->setReplyFrom();
+        $body = $this->getMessageBody();
+        $body->setThreadId($this->getThreadId());
+
+        $this->setMessage($this->service->users_messages->send('me', $body));
+
+        return $this;
+    }
+
 }

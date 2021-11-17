@@ -18,7 +18,7 @@ class LaravelSocialIntegrationServiceProvider extends ServiceProvider
     protected string $namespace = 'Syntax\Http\Controller;s';
 
     /**
-     * Bootstrap any package messages.
+     * Bootstrap any package services.
      *
      * @return void
      * @throws DatetimeException
@@ -40,7 +40,7 @@ class LaravelSocialIntegrationServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register any application messages.
+     * Register any application services.
      *
      * @return void
      */

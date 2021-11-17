@@ -73,25 +73,21 @@ class LaravelGmail extends GmailConnection implements SocialClient
      * Sends a new email
      *
      * @param Request $request
-     * @return Mail
+     * @return array
      * @throws Throwable
      */
-    public function reply(Request $request): Mail
+    public function reply(Request $request): array
     {
-        $mailable = $this->get($request->input('id'));
+        $mailable = (new Mail())->get($request->input('email_id'));
         $mail = new Mail($mailable);
         $mail->reply();
 
-        return $mail;
+        return [
+            'email_id' => $mail->getId(),
+            'thread_id' => $mail->getThreadId(),
+            'subject' => $mail->subject,
+            'message' => $mail->message,
+        ];
     }
 
-    /**
-     * @param string $id
-     *
-     * @return Google_Service_Gmail_Message
-     */
-    public function get(string $id): Google_Service_Gmail_Message
-    {
-        return $this->service->users_messages->get('me', $id);
-    }
 }

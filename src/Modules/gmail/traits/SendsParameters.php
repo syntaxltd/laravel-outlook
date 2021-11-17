@@ -17,6 +17,8 @@ trait SendsParameters
 
     public string $threadId;
 
+    public string|null $historyId;
+
     public string $message;
 
     public string|null $subject;

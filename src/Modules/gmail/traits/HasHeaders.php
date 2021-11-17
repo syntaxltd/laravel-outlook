@@ -5,6 +5,7 @@ namespace Syntax\LaravelSocialIntegration\Modules\gmail\traits;
 
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 trait HasHeaders
 {
@@ -20,7 +21,6 @@ trait HasHeaders
     public function getHeader($headerName, string $regex = null): ?string
     {
         $headers = $this->getHeaders();
-
         $value = null;
 
         foreach ($headers as $header) {
