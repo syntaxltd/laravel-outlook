@@ -2,12 +2,12 @@
 
 namespace Syntax\LaravelSocialIntegration\Modules\gmail\services;
 
-use App\Models\PartnerUser;
 use Google_Service_Gmail;
 use Google_Service_Gmail_Message;
 use Google_Service_Gmail_MessagePart;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Syntax\LaravelSocialIntegration\Models\SocialAccessToken;
 use Syntax\LaravelSocialIntegration\Modules\gmail\traits\HasHeaders;
 use Syntax\LaravelSocialIntegration\Modules\gmail\traits\Replyable;
@@ -46,8 +46,9 @@ class Mail extends GmailConnection
         $this->labels = $message->getLabelIds();
         $this->size = $message->getSizeEstimate();
         $this->threadId = $message->getThreadId();
-        if ($message->getPayload()) {
-            $this->payload = $message->getPayload();
+        $this->historyId = $message->getHistoryId();
+        $this->payload = $this->get($message->getId())->getPayload();
+        if ($this->payload) {
             $this->parts = collect($this->payload->getParts());
         }
     }
@@ -59,10 +60,20 @@ class Mail extends GmailConnection
     {
         $this->to = $this->getTo();
         $from = $this->getFrom();
-        $this->from = $from['email'];
-        $this->nameFrom = $from['email'];
+        $this->from = $from['email'] ?: $from['name'];
+        $this->nameFrom = $from['name'];
 
         $this->subject = $this->getSubject();
+    }
+
+    /**
+     * @param string $id
+     *
+     * @return Google_Service_Gmail_Message
+     */
+    public function get(string $id): Google_Service_Gmail_Message
+    {
+        return $this->service->users_messages->get('me', $id);
     }
 
     /**
@@ -144,34 +155,32 @@ class Mail extends GmailConnection
      *
      * @return string
      */
-    public function getThreadId()
+    public function getThreadId(): string
     {
         return $this->threadId;
     }
 
     /**
+     * Returns thread ID of the email
+     *
+     * @return string|null
+     */
+    public function getHistoryId(): ?string
+    {
+        return $this->historyId;
+    }
+
+    /**
      * Gets the user email from the config file
      *
-     * @return mixed
+     * @return string
      */
-    public function getUser(): mixed
+    public function getUser(): string
     {
         /** @var SocialAccessToken $user */
         $user = SocialAccessToken::Where('partner_user_id', Auth::id())->where('type', 'gmail')->first();
         return $user->email;
     }
 
-    /**
-     * Sends a new email
-     *
-     * @return self
-     */
-    public function send(): static
-    {
-        $body = $this->getMessageBody();
 
-        $this->setMessage($this->service->users_messages->send('me', $body, $this->parameters));
-
-        return $this;
-    }
 }

@@ -18,6 +18,7 @@ class CreateSocialAccessMailsTable extends Migration
             $table->foreignId('token_id')->nullable()->constrained('social_access_tokens')->nullOnDelete();
             $table->string('email_id');
             $table->string('thread_id');
+            $table->string('history_id');
             $table->unsignedBigInteger('parentable_id');
             $table->string('parentable_type');
             $table->json('data')->nullable();

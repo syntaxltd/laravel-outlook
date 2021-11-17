@@ -41,13 +41,13 @@ class AuthClient implements SocialClientAuth
     public function getConfigs(): array
     {
         return [
-            'clientId' => config('laravel-social-integration.messages.outlook.appId'),
-            'clientSecret' => config('laravel-social-integration.messages.outlook.appSecret'),
-            'redirectUri' => config('laravel-social-integration.messages.outlook.redirectUri'),
-            'urlAuthorize' => config('laravel-social-integration.messages.outlook.authority') . config('laravel-social-integration.messages.outlook.authorizeEndpoint'),
-            'urlAccessToken' => config('laravel-social-integration.messages.outlook.authority') . config('laravel-social-integration.messages.outlook.tokenEndpoint'),
+            'clientId' => config('laravel-social-integration.services.outlook.appId'),
+            'clientSecret' => config('laravel-social-integration.services.outlook.appSecret'),
+            'redirectUri' => config('laravel-social-integration.services.outlook.redirectUri'),
+            'urlAuthorize' => config('laravel-social-integration.services.outlook.authority') . config('laravel-social-integration.services.outlook.authorizeEndpoint'),
+            'urlAccessToken' => config('laravel-social-integration.services.outlook.authority') . config('laravel-social-integration.services.outlook.tokenEndpoint'),
             'urlResourceOwnerDetails' => '',
-            'scopes' => config('laravel-social-integration.messages.outlook.scopes'),
+            'scopes' => config('laravel-social-integration.services.outlook.scopes'),
         ];
     }
 
