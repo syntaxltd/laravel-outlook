@@ -57,14 +57,14 @@ class LaravelGmail extends GmailConnection implements SocialClient
         return [
             'email_id' => $mail->getId(),
             'thread_id' => $mail->getThreadId(),
-            'subject' => $mail->getSubject(),
+            'subject' => $mail->subject,
             'message' => $mail->message,
         ];
     }
 
     private function getContacts(Request $request): array
     {
-        return collect($request->input('recipients'))->filter()->map(function ($item) {
+        return collect($request->input('contact'))->filter()->map(function ($item) {
             return $item['email'];
         })->toArray();
     }
