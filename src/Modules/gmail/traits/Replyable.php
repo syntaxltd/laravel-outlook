@@ -8,6 +8,7 @@ use Exception;
 use Google_Service_Gmail_Message;
 use Swift_Attachment;
 use Swift_Message;
+use Syntax\LaravelSocialIntegration\Modules\gmail\services\Mail;
 
 trait Replyable
 {
@@ -32,9 +33,8 @@ trait Replyable
     {
         $threadId = $this->getThreadId();
         if ($threadId) {
-            $this->setHeader('In-Reply-To', $this->getHeader('In-Reply-To'));
-            $this->setHeader('References', $this->getHeader('References'));
-            $this->setHeader('Message-ID', $this->getHeader('Message-ID'));
+            $this->setHeader('In-Reply-To', $this->getHeader('From'));
+            $this->setHeader('Message-ID', $this->getHeader('Message-Id'));
         }
     }
 
@@ -122,5 +122,43 @@ trait Replyable
     private function base64_encode($data): string
     {
         return rtrim(strtr(base64_encode($data), ['+' => '-', '/' => '_']), '=');
+    }
+
+
+    /**
+     * Reply to a specific email
+     *
+     * @return Mail
+     * @throws Exception
+     */
+    public function reply(): Mail
+    {
+        if (!$this->getId()) {
+            throw new Exception('This is a new email. Use send().');
+        }
+
+        $this->setReplyThread();
+        $this->setReplySubject();
+        $this->setReplyTo();
+        $this->setReplyFrom();
+        $body = $this->getMessageBody();
+        $body->setThreadId($this->getThreadId());
+
+        return new Mail($this->service->users_messages->send('me', $body, $this->parameters));
+    }
+
+
+    /**
+     * Sends a new email
+     *
+     * @return self
+     */
+    public function send(): static
+    {
+        $body = $this->getMessageBody();
+
+        $this->setMessage($this->service->users_messages->send('me', $body));
+
+        return $this;
     }
 }

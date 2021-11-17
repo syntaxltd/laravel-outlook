@@ -80,6 +80,11 @@ class LaravelGmail extends GmailConnection implements SocialClient
     {
         $mailable = (new Mail())->get($request->input('email_id'));
         $mail = new Mail($mailable);
+        $mail->to($this->getContacts($request));
+        $mail->cc($request->input('cc'));
+        $mail->bcc($request->input('bcc'));
+        $mail->subject($request->input('subject'));
+        $mail->message($request->input('content'));
         $mail->reply();
 
         return [

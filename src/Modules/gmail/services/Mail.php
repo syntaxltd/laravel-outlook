@@ -174,43 +174,5 @@ class Mail extends GmailConnection
         return $user->email;
     }
 
-    /**
-     * Sends a new email
-     *
-     * @return self
-     */
-    public function send(): static
-    {
-        $body = $this->getMessageBody();
-
-        $this->setMessage($this->service->users_messages->send('me', $body));
-
-        return $this;
-    }
-
-
-    /**
-     * Reply to a specific email
-     *
-     * @return Mail
-     * @throws Exception
-     */
-    public function reply(): Mail
-    {
-        if (!$this->getId()) {
-            throw new Exception('This is a new email. Use send().');
-        }
-
-        $this->setReplyThread();
-        $this->setReplySubject();
-        $this->setReplyTo();
-        $this->setReplyFrom();
-        $body = $this->getMessageBody();
-        $body->setThreadId($this->getThreadId());
-
-        $this->setMessage($this->service->users_messages->send('me', $body));
-
-        return $this;
-    }
 
 }
