@@ -21,7 +21,7 @@ use Illuminate\Support\Collection;
  * @property int $token_id
  * @property string|null $email_id
  * @property string|null $thread_id
- * @property array|string|null $data
+ * @property array|string $data
  * @property int $parentable_id
  * @property string $parentable_type
  * @property Collection|array $threads

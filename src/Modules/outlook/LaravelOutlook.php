@@ -10,6 +10,7 @@ use Microsoft\Graph\Exception\GraphException;
 use Microsoft\Graph\Graph;
 use Microsoft\Graph\Model\ChatMessage;
 use Syntax\LaravelSocialIntegration\Contracts\SocialClient;
+use Syntax\LaravelSocialIntegration\Models\SocialAccessMail;
 use Syntax\LaravelSocialIntegration\Modules\outlook\messages\Mail;
 use Throwable;
 
@@ -21,12 +22,32 @@ class LaravelOutlook implements SocialClient
      */
     public function all(): Collection
     {
-        /** @var ChatMessage $message */
-        $message = $this->getGraphClient()
-            ->createRequest('GET', "/me/messages?\$select=*")
-            ->setReturnType(ChatMessage::class)->execute();
+        $mails = SocialAccessMail::query()->distinct()->get(['thread_id']);
+        $mails->each(function (SocialAccessMail $email) {
+            $threads = $this->getGraphClient()
+                ->createRequest('GET', "/me/messages?\$filter=conversationId eq '$email->thread_id'")
+                ->setReturnType(ChatMessage::class)
+                ->execute();
 
-        return collect($message);
+            collect($threads)->each(function (ChatMessage $chatMessage) use ($email) {
+                /** @var SocialAccessMail $socialMail */
+                $socialMail = SocialAccessMail::query()->firstWhere('thread_id', $email->thread_id);
+                SocialAccessMail::query()->firstOrCreate(['email_id' => $chatMessage->getId()], [
+                    'parentable_id' => $socialMail->parentable_id,
+                    'parentable_type' => $socialMail->parentable_type,
+                    'thread_id' => $chatMessage->getProperties()['conversationId'],
+                    'token_id' => $socialMail->token_id,
+                    'data' => [
+                        'contact' => $socialMail->data['contact'],
+                        'from' => $chatMessage->getFrom(),
+                        'subject' => $chatMessage->getSubject(),
+                        'content' => $chatMessage->getBody(),
+                    ],
+                ]);
+            });
+        });
+
+        return collect([]);
     }
 
     /**
