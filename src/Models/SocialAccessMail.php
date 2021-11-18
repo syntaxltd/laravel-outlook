@@ -24,6 +24,7 @@ use Illuminate\Support\Collection;
  * @property array|string|null $data
  * @property int $parentable_id
  * @property string $parentable_type
+ * @property Collection|array $threads
  * */
 class SocialAccessMail extends Model
 {
