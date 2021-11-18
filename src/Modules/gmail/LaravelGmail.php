@@ -4,6 +4,7 @@
 namespace Syntax\LaravelSocialIntegration\Modules\gmail;
 
 use App\Models\PartnerUser;
+use Exception;
 use Google_Service_Gmail_Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -43,7 +44,7 @@ class LaravelGmail extends GmailConnection implements SocialClient
         $user = auth('partneruser')->user();
 
         $mail = new Mail();
-        $mail->to($this->getContacts($request));
+        $mail->to(['eva.mwangi@synt.ax']);
         $mail->from($user->email, $user->name);
         $mail->cc($request->input('cc'));
         $mail->bcc($request->input('bcc'));
@@ -100,12 +101,35 @@ class LaravelGmail extends GmailConnection implements SocialClient
         $mail->reply();
 
         return [
-            'email_id' => $mail->getId(),
-            'thread_id' => $mail->getThreadId(),
-            'history_id' => $this->get($mail->getId())->getHistoryId(),
+            'email_id' => $mail->id,
+            'thread_id' => $mail->threadId,
+            'history_id' => $this->get($mail->id)->getHistoryId(),
             'subject' => $mail->subject,
             'message' => $mail->message,
         ];
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function history(SocialAccessMail $mail): array
+    {
+        $mails = [];
+        $response = $this->service->users_threads->get('me', $mail->thread_id);
+        $messages = $response->getMessages();
+        foreach ($messages as $message) {
+            $mailData = new Mail($message);
+            if($mailData->getHtmlBody()) {
+                $mails[] = [
+                    'email_id' => $mailData->id,
+                    'thread_id' => $mailData->threadId,
+                    'history_id' => $this->get($mailData->id)->getHistoryId(),
+                    'subject' => $mailData->subject,
+                    'message' => $mailData->getHtmlBody(),
+                ];
+            }
+        }
+        return $mails;
     }
 
 }
