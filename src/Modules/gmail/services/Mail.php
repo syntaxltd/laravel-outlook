@@ -2,6 +2,7 @@
 
 namespace Syntax\LaravelSocialIntegration\Modules\gmail\services;
 
+use Exception;
 use Google_Service_Gmail;
 use Google_Service_Gmail_Message;
 use Google_Service_Gmail_MessagePart;
@@ -9,17 +10,16 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Syntax\LaravelSocialIntegration\Models\SocialAccessToken;
-use Syntax\LaravelSocialIntegration\Modules\gmail\traits\HasHeaders;
+use Syntax\LaravelSocialIntegration\Modules\gmail\traits\HasParts;
 use Syntax\LaravelSocialIntegration\Modules\gmail\traits\Replyable;
-use Syntax\LaravelSocialIntegration\Modules\gmail\traits\SendsParameters;
 
 class Mail extends GmailConnection
 {
-    use SendsParameters, HasHeaders, Replyable;
+    use Replyable;
 
     public Google_Service_Gmail_MessagePart $payload;
 
-    public collection $parts;
+    public Collection $parts;
 
 
     public function __construct(Google_Service_Gmail_Message $message = null)
@@ -47,7 +47,7 @@ class Mail extends GmailConnection
         $this->size = $message->getSizeEstimate();
         $this->threadId = $message->getThreadId();
         $this->historyId = $message->getHistoryId();
-        $this->payload = $this->get($message->getId())->getPayload();
+        $this->payload = $message->getPayload() ?: $this->get($this->id)->getPayload();
         if ($this->payload) {
             $this->parts = collect($this->payload->getParts());
         }
@@ -182,5 +182,31 @@ class Mail extends GmailConnection
         return $user->email;
     }
 
+    /**
+     * Decodes the body from gmail to make it readable
+     *
+     * @param string $content
+     * @return bool|string
+     */
+    public function getDecodedBody(string $content): bool|string
+    {
+        $content = str_replace('_', '/', str_replace('-', '+', $content));
+
+        return base64_decode($content);
+    }
+
+    /**
+     * Gets the HTML body
+     *
+     *
+     * @return string|null
+     * @throws Exception
+     */
+    public function getHtmlBody(): string|null
+    {
+        $content = $this->payload->getBody()->data;
+
+        return $content ? $this->getDecodedBody($content) : null;
+    }
 
 }
