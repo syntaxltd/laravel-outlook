@@ -89,7 +89,7 @@ class AuthClient implements SocialClientAuth
             'access_token' => $accessToken->getToken(),
             'refresh_token' => $accessToken->getRefreshToken(),
             'expires_at' => $accessToken->getExpires(),
-            'type' => 'Bearer',
+            'type' => 'outlook',
             'email' => $email,
         ]);
     }

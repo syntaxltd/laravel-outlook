@@ -20,6 +20,10 @@ class Mail
 
     private string $contentType = 'Text';
 
+    private string $uuid;
+
+    private string $comment;
+
     /**
      * @param string $subject
      * @return Mail
@@ -123,9 +127,31 @@ class Mail
         return $this;
     }
 
+    /**
+     * @param string $uuid
+     * @return Mail
+     */
+    public function setUuid(string $uuid): self
+    {
+        $this->uuid = $uuid;
+
+        return $this;
+    }
+
+    /**
+     * @param string $comment
+     * @return Mail
+     */
+    public function setComment(string $comment): self
+    {
+        $this->comment = $comment;
+
+        return $this;
+    }
+
     public function getPayload(): array
     {
-        return [
+        $message = [
             'saveToSentItems' => $this->saveToSentItems,
             'message' => [
                 'subject' => $this->subject,
@@ -134,7 +160,19 @@ class Mail
                 'ccRecipients' => $this->cc,
                 'bccRecipients' => $this->bcc,
                 'attachments' => $this->attachments,
+                'singleValueExtendedProperties' => [
+                    [
+                        'id' => 'String {' . $this->uuid . '} Name SendMailId',
+                        'value' => $this->uuid,
+                    ]
+                ]
             ],
         ];
+
+        if (isset($this->comment)) {
+            $message['comment'] = $this->comment;
+        }
+
+        return $message;
     }
 }
