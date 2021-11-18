@@ -37,6 +37,11 @@ class LaravelOutlook implements SocialClient
         return (new Graph)->setAccessToken($this->auth()->getToken());
     }
 
+    /**
+     * Init auth class
+     *
+     * @return AuthClient
+     */
     public function auth(): AuthClient
     {
         return new AuthClient;
