@@ -32,11 +32,14 @@ class LaravelOutlook implements SocialClient
             collect($threads)->each(function (ChatMessage $chatMessage) use ($email) {
                 /** @var SocialAccessMail $socialMail */
                 $socialMail = SocialAccessMail::query()->firstWhere('thread_id', $email->thread_id);
+                $mailProperties = $chatMessage->getProperties();
                 SocialAccessMail::query()->firstOrCreate(['email_id' => $chatMessage->getId()], [
                     'parentable_id' => $socialMail->parentable_id,
                     'parentable_type' => $socialMail->parentable_type,
-                    'thread_id' => $chatMessage->getProperties()['conversationId'],
+                    'thread_id' => $mailProperties['conversationId'],
                     'token_id' => $socialMail->token_id,
+                    'created_at' => $mailProperties['createdDateTime'],
+                    'updated_at' => $mailProperties['lastModifiedDateTime'],
                     'data' => [
                         'contact' => $socialMail->data['contact'],
                         'from' => $chatMessage->getFrom(),
