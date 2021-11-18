@@ -4,6 +4,7 @@
 namespace Syntax\LaravelSocialIntegration\Modules\gmail;
 
 use App\Models\PartnerUser;
+use Google_Service_Gmail_Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -57,7 +58,7 @@ class LaravelGmail extends GmailConnection implements SocialClient
         return [
             'email_id' => $mail->getId(),
             'thread_id' => $mail->getThreadId(),
-            'history_id' => $mail->getHistoryId(),
+            'history_id' => $this->get($mail->getId())->getHistoryId(),
             'subject' => $mail->subject,
             'message' => $mail->message,
         ];
@@ -70,6 +71,17 @@ class LaravelGmail extends GmailConnection implements SocialClient
         })->toArray();
     }
 
+
+    /**
+     * @param string $id
+     *
+     * @return Google_Service_Gmail_Message
+     */
+    public function get(string $id): Google_Service_Gmail_Message
+    {
+        return $this->service->users_messages->get('me', $id);
+    }
+
     /**
      * Sends a new email
      *
@@ -79,22 +91,18 @@ class LaravelGmail extends GmailConnection implements SocialClient
      */
     public function reply(Request $request): array
     {
-        $mailable = (new Mail())->get($request->input('email_id'));
-        Log::info('first mail called');
-        $mail = new Mail($mailable);
-        Log::info('second mail called');
+        $mail = new Mail($this->get($request->input('email_id')));
         $mail->to($this->getContacts($request));
         $mail->cc($request->input('cc'));
         $mail->bcc($request->input('bcc'));
         $mail->subject($request->input('subject'));
         $mail->message($request->input('content'));
         $mail->reply();
-        Log::info($mailable->getHistoryId());
 
         return [
             'email_id' => $mail->getId(),
             'thread_id' => $mail->getThreadId(),
-            'history_id' => $mailable->getHistoryId(),
+            'history_id' => $this->get($mail->getId())->getHistoryId(),
             'subject' => $mail->subject,
             'message' => $mail->message,
         ];
