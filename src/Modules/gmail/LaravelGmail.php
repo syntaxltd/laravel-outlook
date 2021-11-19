@@ -24,13 +24,6 @@ class LaravelGmail extends GmailConnection implements SocialClient
         return new AuthClient();
     }
 
-    public function all(): Collection
-    {
-        $client = SocialAccessToken::query()->where('partner_user_id', Auth::id())->where('type', 'gmail')->pluck('id');
-
-        return SocialAccessMail::query()->whereIn('token_id', $client)->get();
-    }
-
     /**
      * Sends a new email
      *
@@ -44,7 +37,7 @@ class LaravelGmail extends GmailConnection implements SocialClient
         $user = auth('partneruser')->user();
 
         $mail = new Mail();
-        $mail->to(['eva.mwangi@synt.ax']);
+        $mail->to($this->getContacts($request));
         $mail->from($user->email, $user->name);
         $mail->cc($request->input('cc'));
         $mail->bcc($request->input('bcc'));
@@ -61,6 +54,8 @@ class LaravelGmail extends GmailConnection implements SocialClient
             'thread_id' => $mail->getThreadId(),
             'history_id' => $this->get($mail->getId())->getHistoryId(),
             'subject' => $mail->subject,
+            'from' => $mail->getFrom()['name'] ?: $mail->getFrom()['email'],
+            'to' => $mail->getTo(),
             'message' => $mail->message,
         ];
     }
@@ -105,6 +100,8 @@ class LaravelGmail extends GmailConnection implements SocialClient
             'thread_id' => $mail->threadId,
             'history_id' => $this->get($mail->id)->getHistoryId(),
             'subject' => $mail->subject,
+            'from' => $mail->getFrom()['name'] ?: $mail->getFrom()['email'],
+            'to' => $mail->getTo(),
             'message' => $mail->message,
         ];
     }
@@ -112,24 +109,38 @@ class LaravelGmail extends GmailConnection implements SocialClient
     /**
      * @throws Exception
      */
-    public function history(SocialAccessMail $mail): array
+    public function all(): Collection
     {
-        $mails = [];
-        $response =  $this->service->users_threads->get('me', $mail->thread_id);
-        $allMessages = $response->getMessages();
-        foreach ($allMessages as $message) {
-            $mailData = new Mail($message);
-            if($mailData->getHtmlBody()) {
-                $mails[] = [
-                    'email_id' => $mailData->id,
-                    'thread_id' => $mailData->threadId,
-                    'history_id' => $this->get($mailData->id)->getHistoryId(),
-                    'subject' => $mailData->subject,
-                    'message' => $mailData->getHtmlBody(),
-                ];
+        $mails = SocialAccessMail::query()->distinct()->get(['thread_id']);
+        $mails->each(function (SocialAccessMail $email) {
+            $response = $this->service->users_threads->get('me', $email->thread_id);
+            $threads = $response->getMessages();
+            foreach ($threads as $thread) {
+                /** @var SocialAccessMail $socialMail */
+                $socialMail = SocialAccessMail::query()->firstWhere('thread_id', $thread->threadId);
+                $mail = new Mail($thread);
+                if ($mail->getHtmlBody()) {
+                    SocialAccessMail::query()->firstOrCreate(['history_id' => $mail->getHistoryId()], [
+                        'parentable_id' => $socialMail->parentable_id,
+                        'parentable_type' => $socialMail->parentable_type,
+                        'thread_id' => $mail->threadId,
+                        'token_id' => $socialMail->token_id,
+                        'email_id' => $mail->id,
+                        'created_at' => $mail->internalDate,
+                        'updated_at' => $mail->internalDate,
+                        'data' => [
+                            'contact' => $socialMail->data['contact'],
+                            'from' => $mail->getFrom()['name'] ?: $mail->getFrom()['email'],
+                            'to' => $mail->getTo(),
+                            'subject' => $mail->subject,
+                            'content' => $mail->getHtmlBody(),
+                        ],
+                    ]);
+                }
             }
-        }
-        return $mails;
+        });
+
+        return collect([]);
     }
 
 }
