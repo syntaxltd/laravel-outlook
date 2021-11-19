@@ -72,7 +72,7 @@ class SocialAccessMail extends Model
      */
     public function saveAssociations(Request $request): void
     {
-        $this->contacts()->sync((new ConvertArray())->convertToArray($request->input('associations.contacts')));
+        $this->contacts()->sync((new ConvertArray())->convertToArray(array_merge($request->input('associations.contacts'), $request->input('contact'))));
         $this->companies()->sync((new ConvertArray())->convertToArray($request->input('associations.companies')));
         $this->properties()->sync((new ConvertArray())->convertToArray($request->input('associations.properties')));
         $this->deals()->sync((new ConvertArray())->convertToArray($request->input('associations.deals')));
