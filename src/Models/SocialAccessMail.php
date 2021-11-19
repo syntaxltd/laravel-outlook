@@ -7,6 +7,7 @@ use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Deal;
 use App\Models\Property;
+use App\Traits\HasAttachment;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -28,6 +29,8 @@ use Illuminate\Support\Collection;
  * */
 class SocialAccessMail extends Model
 {
+    use HasAttachment;
+    
     /**
      * @var string[]
      */

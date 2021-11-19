@@ -2,6 +2,9 @@
 
 namespace Syntax\LaravelSocialIntegration\Modules\outlook\messages;
 
+use Safe\Exceptions\FilesystemException;
+use function Safe\file_get_contents;
+
 class Mail
 {
     private string $subject;
@@ -57,7 +60,10 @@ class Mail
     {
         $this->recipients = collect($recipients)->map(function ($recipient) {
             return [
-                'emailAddress' => $recipient
+                'emailAddress' => [
+                    'name' => $recipient['name'],
+                    'address' => $recipient['email'],
+                ]
             ];
         })->toArray();
 
@@ -65,25 +71,36 @@ class Mail
     }
 
     /**
-     * @param array $attachments
+     * @param array|null $attachments
      * @return Mail
+     * @throws FilesystemException
      */
-    public function setAttachments(array $attachments): self
+    public function setAttachments(?array $attachments): self
     {
-        $this->attachments = $attachments;
+        collect($attachments ?? [])->each(function ($attachment) {
+            $this->attachments[] = [
+                "@odata.type" => "#microsoft.graph.fileAttachment",
+                "name" => $attachment['name'],
+                "contentType" => $attachment['encoding'],
+                "contentBytes" => base64_encode(file_get_contents($attachment['file_url'])),
+            ];
+        });
 
         return $this;
     }
 
     /**
-     * @param array $cc
+     * @param array|null $cc
      * @return Mail
      */
-    public function setCc(array $cc): self
+    public function setCc(?array $cc): self
     {
-        $this->cc = collect($$cc)->map(function ($recipient) {
+        $this->cc = collect($cc ?? [])->map(function ($recipient) {
             return [
-                'emailAddress' => $recipient
+                'emailAddress' => [
+                    'name' => $recipient['name'],
+                    'address' => $recipient['email'],
+                ]
             ];
         })->toArray();
 
@@ -91,14 +108,17 @@ class Mail
     }
 
     /**
-     * @param array $bcc
+     * @param array|null $bcc
      * @return Mail
      */
-    public function setBcc(array $bcc): self
+    public function setBcc(?array $bcc): self
     {
-        $this->bcc = collect($bcc)->map(function ($item) {
+        $this->bcc = collect($bcc ?? [])->map(function ($item) {
             return [
-                'emailAddress' => $item,
+                'emailAddress' => [
+                    'name' => $item['name'],
+                    'address' => $item['email'],
+                ],
             ];
         })->toArray();
 
