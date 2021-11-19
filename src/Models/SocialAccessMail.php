@@ -48,10 +48,10 @@ class SocialAccessMail extends Model
     public function getAssociationsAttribute(): array
     {
         return [
-//            'companies' => $this->companies,
-//            'contacts' => $this->contacts,
-//            'properties' => $this->properties,
-//            'deals' => $this->deals,
+            'companies' => $this->companies,
+            'contacts' => $this->contacts,
+            'properties' => $this->properties,
+            'deals' => $this->deals,
         ];
     }
 
