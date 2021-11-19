@@ -213,7 +213,9 @@ class Mail extends GmailConnection
         $content =  null;
         foreach ($this->parts as $part) {
             $body = $part->filter(function ($value, $key) {
-                return $key === 'data' ? $value : null;
+                return $key === 'data';
+            })->map(function ($item) {
+                return $item;
             })->toArray();
             $content = $body['data'];
         };
