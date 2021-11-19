@@ -7,12 +7,8 @@ use App\Models\PartnerUser;
 use Exception;
 use Google_Service_Gmail_Message;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Syntax\LaravelSocialIntegration\Contracts\SocialClient;
 use Syntax\LaravelSocialIntegration\Models\SocialAccessMail;
-use Syntax\LaravelSocialIntegration\Models\SocialAccessToken;
 use Syntax\LaravelSocialIntegration\Modules\gmail\services\GmailConnection;
 use Syntax\LaravelSocialIntegration\Modules\gmail\services\Mail;
 use Throwable;
@@ -109,7 +105,7 @@ class LaravelGmail extends GmailConnection implements SocialClient
     /**
      * @throws Exception
      */
-    public function all(): Collection
+    public function checkReplies(): void
     {
         $mails = SocialAccessMail::query()->distinct()->get(['thread_id']);
         $mails->each(function (SocialAccessMail $email) {
@@ -139,8 +135,5 @@ class LaravelGmail extends GmailConnection implements SocialClient
                 }
             }
         });
-
-        return collect([]);
     }
-
 }

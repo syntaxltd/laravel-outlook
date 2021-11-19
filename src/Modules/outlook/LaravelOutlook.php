@@ -2,6 +2,7 @@
 
 namespace Syntax\LaravelSocialIntegration\Modules\outlook;
 
+use App\Models\Contact;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -20,37 +21,47 @@ class LaravelOutlook implements SocialClient
      * @throws Throwable
      * @throws GraphException
      */
-    public function all(): Collection
+    public function checkReplies(Contact $contact, Collection $mails, $token): Collection
     {
-        $mails = SocialAccessMail::query()->distinct()->get(['thread_id']);
-        $mails->each(function (SocialAccessMail $email) {
-            $threads = $this->getGraphClient()
-                ->createRequest('GET', "/me/messages?\$filter=conversationId eq '$email->thread_id'")
-                ->setReturnType(ChatMessage::class)
-                ->execute();
+        // Get unique thread ids
+        $unique = $mails->unique('thread_id')->pluck('thread_id')->toArray();
+        array_walk($unique, function (&$unique) {
+            $unique = "conversationId eq '$unique'";
+        });
+        $query = implode(' or ', $unique);
 
-            collect($threads)->each(function (ChatMessage $chatMessage) use ($email) {
-                /** @var SocialAccessMail $socialMail */
-                $socialMail = SocialAccessMail::query()->firstWhere('thread_id', $email->thread_id);
+        $threads = $this->getGraphClient()->createRequest('GET', "/me/messages?\$filter=$query")
+            ->setReturnType(ChatMessage::class)
+            ->execute();
+
+        collect($threads)->each(function (ChatMessage $chatMessage) use ($contact, &$mails, $token) {
+            if (!$mails->contains('email_id', $chatMessage->getId())) {
                 $mailProperties = $chatMessage->getProperties();
-                SocialAccessMail::query()->firstOrCreate(['email_id' => $chatMessage->getId()], [
-                    'parentable_id' => $socialMail->parentable_id,
-                    'parentable_type' => $socialMail->parentable_type,
+                $reply = SocialAccessMail::query()->create([
+                    'email_id' => $chatMessage->getId(),
+                    'parentable_id' => $contact->id,
+                    'parentable_type' => get_class($contact),
                     'thread_id' => $mailProperties['conversationId'],
-                    'token_id' => $socialMail->token_id,
+                    'token_id' => $token,
                     'created_at' => $mailProperties['createdDateTime'],
                     'updated_at' => $mailProperties['lastModifiedDateTime'],
                     'data' => [
-                        'contact' => $socialMail->data['contact'],
+                        'contact' => [[
+                            'id' => $contact->id,
+                            'name' => $contact->name,
+                            'email' => $contact->email,
+                        ]],
                         'from' => $chatMessage->getFrom(),
                         'subject' => $chatMessage->getSubject(),
                         'content' => $chatMessage->getBody(),
                     ],
                 ]);
-            });
+
+                $mails->add($reply);
+            }
         });
 
-        return collect([]);
+        return $mails;
     }
 
     /**

@@ -34,7 +34,7 @@ class SocialAccessMail extends Model
     public array $associables = ['properties', 'contacts', 'companies', 'deals'];
 
     protected $fillable = [
-        'parentable_id', 'parentable_type', 'email_id', 'thread_id', 'history_id', 'token_id', 'data'
+        'parentable_id', 'parentable_type', 'email_id', 'thread_id', 'history_id', 'token_id', 'data', 'created_at', 'updated_at',
     ];
 
     protected $casts = [
@@ -48,10 +48,10 @@ class SocialAccessMail extends Model
     public function getAssociationsAttribute(): array
     {
         return [
-            'companies' => $this->companies,
-            'contacts' => $this->contacts,
-            'properties' => $this->properties,
-            'deals' => $this->deals,
+//            'companies' => $this->companies,
+//            'contacts' => $this->contacts,
+//            'properties' => $this->properties,
+//            'deals' => $this->deals,
         ];
     }
 
@@ -109,5 +109,4 @@ class SocialAccessMail extends Model
     {
         return $this->morphedByMany(Deal::class, 'social_access_mailable');
     }
-
 }

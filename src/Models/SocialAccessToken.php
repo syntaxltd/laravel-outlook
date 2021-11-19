@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int|null $expires_at
  * @property int $id
  * @property string $email
+ * @property string $type
  */
 class SocialAccessToken extends Model
 {
