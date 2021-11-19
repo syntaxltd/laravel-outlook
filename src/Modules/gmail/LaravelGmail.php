@@ -9,6 +9,7 @@ use Exception;
 use Google_Service_Gmail_Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Syntax\LaravelSocialIntegration\Contracts\SocialClient;
 use Syntax\LaravelSocialIntegration\Models\SocialAccessMail;
 use Syntax\LaravelSocialIntegration\Modules\gmail\services\GmailConnection;
@@ -35,7 +36,7 @@ class LaravelGmail extends GmailConnection implements SocialClient
         $user = auth('partneruser')->user();
 
         $mail = new Mail();
-        $mail->to($this->getContacts($request));
+        $mail->to(['eva.mwangi@synt.ax']);
         $mail->from($user->email, $user->name);
         $mail->cc($request->input('cc'));
         $mail->bcc($request->input('bcc'));
@@ -91,6 +92,10 @@ class LaravelGmail extends GmailConnection implements SocialClient
         $mail->bcc($request->input('bcc'));
         $mail->subject($request->input('subject'));
         $mail->message($request->input('content'));
+
+        if (!is_null($request->input('attachments'))) {
+            $mail->attach($request->input('attachments'));
+        }
         $mail->reply();
 
         return [
@@ -116,30 +121,32 @@ class LaravelGmail extends GmailConnection implements SocialClient
             $threads = $response->getMessages();
             foreach ($threads as $thread) {
                 $mail = new Mail($thread);
-                $reply = SocialAccessMail::query()->firstOrCreate(['history_id' => $mail->getHistoryId()], [
-                    'parentable_id' => $contact->id,
-                    'parentable_type' => get_class($contact),
-                    'thread_id' => $mail->threadId,
-                    'token_id' => $token,
-                    'email_id' => $mail->id,
-                    'created_at' => $mail->internalDate,
-                    'updated_at' => $mail->internalDate,
-                    'data' => [
-                        'contact' => [[
-                            'id' => $contact->id,
-                            'name' => $contact->name,
-                            'email' => $contact->email,
-                        ]],
-                        'from' => $mail->getFrom(),
-                        'to' => $mail->getTo(),
-                        'subject' => $mail->subject,
-                        'content' => $mail->getHtmlBody(),
-                    ],
-                ]);
-                $mails->add($reply);
+                if(!$mails->contains('history_id', $mail->getHistoryId()) && $mail->getHtmlBody()) {
+                    $reply = SocialAccessMail::query()->create([
+                        'history_id' => $mail->getHistoryId(),
+                        'parentable_id' => $contact->id,
+                        'parentable_type' => get_class($contact),
+                        'thread_id' => $mail->threadId,
+                        'token_id' => $token,
+                        'email_id' => $mail->id,
+                        'created_at' => $mail->internalDate,
+                        'updated_at' => $mail->internalDate,
+                        'data' => [
+                            'contact' => [[
+                                'id' => $contact->id,
+                                'name' => $contact->name,
+                                'email' => $contact->email,
+                            ]],
+                            'from' => $mail->getFrom(),
+                            'to' => $mail->getTo(),
+                            'subject' => $mail->subject,
+                            'content' => $mail->getHtmlBody(),
+                        ],
+                    ]);
+                    $mails->add($reply);
+                }
             }
         });
-
         return $mails;
     }
 }
