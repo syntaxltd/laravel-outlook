@@ -3,10 +3,12 @@
 
 namespace Syntax\LaravelSocialIntegration\Modules\gmail;
 
+use App\Models\Contact;
 use App\Models\PartnerUser;
 use Exception;
 use Google_Service_Gmail_Message;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Syntax\LaravelSocialIntegration\Contracts\SocialClient;
 use Syntax\LaravelSocialIntegration\Models\SocialAccessMail;
 use Syntax\LaravelSocialIntegration\Modules\gmail\services\GmailConnection;
@@ -50,7 +52,7 @@ class LaravelGmail extends GmailConnection implements SocialClient
             'thread_id' => $mail->getThreadId(),
             'history_id' => $this->get($mail->getId())->getHistoryId(),
             'subject' => $mail->subject,
-            'from' => $mail->getFrom()['name'] ?: $mail->getFrom()['email'],
+            'from' => $mail->getFrom(),
             'to' => $mail->getTo(),
             'message' => $mail->message,
         ];
@@ -96,7 +98,7 @@ class LaravelGmail extends GmailConnection implements SocialClient
             'thread_id' => $mail->threadId,
             'history_id' => $this->get($mail->id)->getHistoryId(),
             'subject' => $mail->subject,
-            'from' => $mail->getFrom()['name'] ?: $mail->getFrom()['email'],
+            'from' => $mail->getFrom(),
             'to' => $mail->getTo(),
             'message' => $mail->message,
         ];
@@ -105,35 +107,39 @@ class LaravelGmail extends GmailConnection implements SocialClient
     /**
      * @throws Exception
      */
-    public function checkReplies(): void
+    public function checkReplies(Contact $contact, Collection $mails, string $token): Collection
     {
-        $mails = SocialAccessMail::query()->distinct()->get(['thread_id']);
-        $mails->each(function (SocialAccessMail $email) {
-            $response = $this->service->users_threads->get('me', $email->thread_id);
+        // Get unique thread ids
+        $unique = $mails->unique('thread_id')->pluck('thread_id')->toArray();
+        collect($unique)->each(function ($email) use ($token, $contact, $mails) {
+            $response = $this->service->users_threads->get('me', $email);
             $threads = $response->getMessages();
             foreach ($threads as $thread) {
-                /** @var SocialAccessMail $socialMail */
-                $socialMail = SocialAccessMail::query()->firstWhere('thread_id', $thread->threadId);
                 $mail = new Mail($thread);
-                if ($mail->getHtmlBody()) {
-                    SocialAccessMail::query()->firstOrCreate(['history_id' => $mail->getHistoryId()], [
-                        'parentable_id' => $socialMail->parentable_id,
-                        'parentable_type' => $socialMail->parentable_type,
-                        'thread_id' => $mail->threadId,
-                        'token_id' => $socialMail->token_id,
-                        'email_id' => $mail->id,
-                        'created_at' => $mail->internalDate,
-                        'updated_at' => $mail->internalDate,
-                        'data' => [
-                            'contact' => $socialMail->data['contact'],
-                            'from' => $mail->getFrom()['name'] ?: $mail->getFrom()['email'],
-                            'to' => $mail->getTo(),
-                            'subject' => $mail->subject,
-                            'content' => $mail->getHtmlBody(),
-                        ],
-                    ]);
-                }
+                $reply = SocialAccessMail::query()->firstOrCreate(['history_id' => $mail->getHistoryId()], [
+                    'parentable_id' => $contact->id,
+                    'parentable_type' => get_class($contact),
+                    'thread_id' => $mail->threadId,
+                    'token_id' => $token,
+                    'email_id' => $mail->id,
+                    'created_at' => $mail->internalDate,
+                    'updated_at' => $mail->internalDate,
+                    'data' => [
+                        'contact' => [[
+                            'id' => $contact->id,
+                            'name' => $contact->name,
+                            'email' => $contact->email,
+                        ]],
+                        'from' => $mail->getFrom(),
+                        'to' => $mail->getTo(),
+                        'subject' => $mail->subject,
+                        'content' => $mail->getHtmlBody(),
+                    ],
+                ]);
+                $mails->add($reply);
             }
         });
+
+        return $mails;
     }
 }
