@@ -15,11 +15,11 @@ use Syntax\LaravelSocialIntegration\Modules\gmail\traits\Replyable;
 
 class Mail extends GmailConnection
 {
-    use Replyable;
+    use Replyable, HasParts;
 
     public Google_Service_Gmail_MessagePart $payload;
 
-    public Collection $parts;
+    public array $parts = [];
 
 
     public function __construct(Google_Service_Gmail_Message $message = null)
@@ -48,8 +48,14 @@ class Mail extends GmailConnection
         $this->threadId = $message->getThreadId();
         $this->historyId = $message->getHistoryId();
         $this->payload = $message->getPayload() ?: $this->get($this->id)->getPayload();
-        if ($this->payload) {
-            $this->parts = collect($this->payload->getParts());
+        if ($this->payload->getParts()) {
+            $parts = collect($this->payload->getParts());
+            foreach ($parts as $part){
+                /** @var Google_Service_Gmail_MessagePart $part */
+                array_push($this->parts, collect($part->getBody()));
+            }
+        }else{
+            array_push($this->parts, collect($this->payload->getBody()));
         }
     }
 
@@ -186,9 +192,9 @@ class Mail extends GmailConnection
      * Decodes the body from gmail to make it readable
      *
      * @param string $content
-     * @return bool|string
+     * @return string
      */
-    public function getDecodedBody(string $content): bool|string
+    public function getDecodedBody(string $content): string
     {
         $content = str_replace('_', '/', str_replace('-', '+', $content));
 
@@ -204,8 +210,13 @@ class Mail extends GmailConnection
      */
     public function getHtmlBody(): string|null
     {
-        $content = $this->payload->getBody()->data;
-
+        $content =  null;
+        foreach ($this->parts as $part) {
+            $body = $part->filter(function ($value, $key) {
+                return $key === 'data' ? $value : null;
+            })->toArray();
+            $content = $body['data'];
+        };
         return $content ? $this->getDecodedBody($content) : null;
     }
 

@@ -115,9 +115,9 @@ class LaravelGmail extends GmailConnection implements SocialClient
     public function history(SocialAccessMail $mail): array
     {
         $mails = [];
-        $response = $this->service->users_threads->get('me', $mail->thread_id);
-        $messages = $response->getMessages();
-        foreach ($messages as $message) {
+        $response =  $this->service->users_threads->get('me', $mail->thread_id);
+        $allMessages = $response->getMessages();
+        foreach ($allMessages as $message) {
             $mailData = new Mail($message);
             if($mailData->getHtmlBody()) {
                 $mails[] = [
