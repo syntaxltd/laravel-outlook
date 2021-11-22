@@ -15,9 +15,9 @@ class CreateMailables extends Migration
     {
         Schema::create('mailables', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('social_access_mail_id')->constrained()->onDelete('cascade');
-            $table->integer('social_access_mailable_id');
-            $table->string('social_access_mailable_type');
+            $table->foreignId('mail_id')->constrained()->onDelete('cascade');
+            $table->integer('mailable_id');
+            $table->string('mailable_type');
         });
     }
 

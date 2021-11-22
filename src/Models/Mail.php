@@ -87,7 +87,7 @@ class Mail extends Model
      */
     public function contacts(): MorphToMany
     {
-        return $this->morphedByMany(Contact::class, 'social_access_mailable');
+        return $this->morphedByMany(Contact::class, 'mailable');
     }
 
     /**
@@ -95,7 +95,7 @@ class Mail extends Model
      */
     public function companies(): MorphToMany
     {
-        return $this->morphedByMany(Company::class, 'social_access_mailable');
+        return $this->morphedByMany(Company::class, 'mailable');
     }
 
     /**
@@ -103,7 +103,7 @@ class Mail extends Model
      */
     public function properties(): MorphToMany
     {
-        return $this->morphedByMany(Property::class, 'social_access_mailable');
+        return $this->morphedByMany(Property::class, 'mailable');
     }
 
     /**
@@ -111,7 +111,7 @@ class Mail extends Model
      */
     public function deals(): MorphToMany
     {
-        return $this->morphedByMany(Deal::class, 'social_access_mailable');
+        return $this->morphedByMany(Deal::class, 'mailable');
     }
 
     /**
