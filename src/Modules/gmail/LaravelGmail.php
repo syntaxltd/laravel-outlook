@@ -122,6 +122,7 @@ class LaravelGmail extends GmailConnection implements SocialClient
             foreach ($threads as $thread) {
                 $mail = new Mail($thread);
                 if(!$mails->contains('history_id', $mail->getHistoryId()) && $mail->getHtmlBody()) {
+                    /** @var SocialAccessMail $reply */
                     $reply = SocialAccessMail::query()->create([
                         'history_id' => $mail->getHistoryId(),
                         'parentable_id' => $contact->id,
@@ -143,10 +144,17 @@ class LaravelGmail extends GmailConnection implements SocialClient
                             'content' => $mail->getHtmlBody(),
                         ],
                     ]);
+                    $reply->saveAttachments($mail->getAttachments());
                     $mails->add($reply);
                 }
             }
         });
+
         return $mails;
+    }
+
+    public function delete(SocialAccessMail $mail): Google_Service_Gmail_Message
+    {
+       return $this->service->users_messages->trash('me', $mail->email_id);
     }
 }

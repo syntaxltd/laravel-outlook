@@ -2,6 +2,7 @@
 
 namespace Syntax\LaravelSocialIntegration\Modules\gmail\services;
 
+use App\Models\Partner;
 use Exception;
 use Google_Service_Gmail;
 use Google_Service_Gmail_Message;
@@ -9,9 +10,11 @@ use Google_Service_Gmail_MessagePart;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Syntax\LaravelSocialIntegration\Models\SocialAccessToken;
 use Syntax\LaravelSocialIntegration\Modules\gmail\traits\HasParts;
 use Syntax\LaravelSocialIntegration\Modules\gmail\traits\Replyable;
+use function Safe\base64_decode;
 
 class Mail extends GmailConnection
 {
@@ -52,7 +55,10 @@ class Mail extends GmailConnection
             $parts = collect($this->payload->getParts());
             foreach ($parts as $part){
                 /** @var Google_Service_Gmail_MessagePart $part */
-                array_push($this->parts, collect($part->getBody()));
+                $body = collect($part->getBody());
+                $body->prepend($part->getFilename(), 'fileName');
+                $body->prepend($part->getMimeType(), 'mimeType');
+                array_push($this->parts, $body);
             }
         }else{
             array_push($this->parts, collect($this->payload->getBody()));
@@ -221,5 +227,36 @@ class Mail extends GmailConnection
         };
         return $content ? $this->getDecodedBody($content) : null;
     }
+    /**
+     * Returns a collection of attachment
+     *
+     * @return array
+     * @throws \Exception
+     */
+    public function getAttachments(): array
+    {
+        $attachments = [];
+        foreach ($this->parts as $part) {
+            $content = $part->map(function ($item ) {
+                return $item;
+            })->toArray();
+            if ($content['attachmentId'] && !is_null($content['attachmentId'])) {
+                $attachment = $this->service->users_messages_attachments->get('me', $this->id, $content['attachmentId']);
 
+                /** @var Partner $partner */
+                $partner = tenant();
+                Storage::disk('s3')->put("$partner->id/attachments/mails/" . $content['fileName'], $this->getDecodedBody($attachment->getData()));
+                $path = Storage::disk('s3')->path("$partner->id/attachments/mails/" . $content['fileName']);
+
+                $attachments[] = [
+                    'encoding' => $content['mimeType'],
+                    'size' => $content['size'],
+                    'name' => $content['fileName'],
+                    'path' => $path,
+                    'file_url' => Storage::disk('s3')->url($path),
+                ];
+            }
+        };
+        return $attachments;
+    }
 }
