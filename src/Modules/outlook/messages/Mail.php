@@ -1,6 +1,6 @@
 <?php
 
-namespace Syntax\LaravelSocialIntegration\Modules\outlook\messages;
+namespace Syntax\LaravelMailIntegration\Modules\outlook\messages;
 
 use Safe\Exceptions\FilesystemException;
 use function Safe\file_get_contents;

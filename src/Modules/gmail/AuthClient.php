@@ -1,19 +1,19 @@
 <?php
 
 
-namespace Syntax\LaravelSocialIntegration\Modules\gmail;
+namespace Syntax\LaravelMailIntegration\Modules\gmail;
 
 use Google_Service_Gmail;
 use Google_Service_Gmail_Profile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Syntax\LaravelSocialIntegration\Contracts\SocialClientAuth;
-use Syntax\LaravelSocialIntegration\Exceptions\InvalidStateException;
-use Syntax\LaravelSocialIntegration\Models\SocialAccessToken;
-use Syntax\LaravelSocialIntegration\Modules\gmail\traits\Configurable;
+use Syntax\LaravelMailIntegration\Contracts\MailClientAuth;
+use Syntax\LaravelMailIntegration\Exceptions\InvalidStateException;
+use Syntax\LaravelMailIntegration\Models\MailAccessToken;
+use Syntax\LaravelMailIntegration\Modules\gmail\traits\Configurable;
 use Throwable;
 
-class AuthClient extends \Google_Client implements SocialClientAuth
+class AuthClient extends \Google_Client implements MailClientAuth
 {
     use Configurable;
 
@@ -59,7 +59,7 @@ class AuthClient extends \Google_Client implements SocialClientAuth
             $accessToken['email'] = $me->emailAddress;
         }
 
-        SocialAccessToken::query()->updateOrCreate([
+        MailAccessToken::query()->updateOrCreate([
             'partner_user_id' => auth('partneruser')->id(),
             'type' => 'gmail',
         ], [
@@ -87,6 +87,6 @@ class AuthClient extends \Google_Client implements SocialClientAuth
         $this->revokeToken();
 
         // Change to get Social Access Token for authenticated users
-        SocialAccessToken::Where('partner_user_id', Auth::id())->where('type', 'gmail')->delete();
+        MailAccessToken::Where('partner_user_id', Auth::id())->where('type', 'gmail')->delete();
     }
 }

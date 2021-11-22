@@ -1,10 +1,10 @@
 <?php
 
-namespace Syntax\LaravelSocialIntegration\Contracts;
+namespace Syntax\LaravelMailIntegration\Contracts;
 
 use Illuminate\Http\Request;
 
-interface SocialClientAuth
+interface MailClientAuth
 {
     public function getOAuthClient(): mixed;
 

@@ -1,9 +1,9 @@
 <?php
 
-namespace Syntax\LaravelSocialIntegration\Traits;
+namespace Syntax\LaravelMailIntegration\Traits;
 
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
-use Syntax\LaravelSocialIntegration\Models\SocialAccessMail;
+use Syntax\LaravelMailIntegration\Models\Mail;
 
 trait HasMails
 {
@@ -14,7 +14,7 @@ trait HasMails
      */
     public function mails(): MorphToMany
     {
-        return $this->morphToMany(SocialAccessMail::class, 'social_access_mailable');
+        return $this->morphToMany(Mail::class, 'mailable');
     }
 
 }

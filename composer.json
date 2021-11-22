@@ -1,11 +1,11 @@
 {
-	"name": "syntaxltd/laravel-social-integration",
-	"description": "Laravel outlook services integration",
+	"name": "syntaxltd/laravel-mail-integration",
+	"description": "Laravel mail services integration",
 	"type": "library",
 	"authors": [
 		{
 			"name": "Dennis Mwea",
-			"email": "mweadennis2@gmail.com"
+			"email": "mweadennis@@synt.ax"
 		}
 	],
 	"require": {
@@ -15,13 +15,13 @@
 	},
 	"autoload": {
 		"psr-4": {
-			"Syntax\\LaravelSocialIntegration\\": "src/"
+			"Syntax\\LaravelMailIntegration\\": "src/"
 		}
 	},
 	"extra": {
 		"laravel": {
 			"providers": [
-				"Syntax\\LaravelSocialIntegration\\LaravelSocialIntegrationServiceProvider"
+				"Syntax\\LaravelMailIntegration\\LaravelMailIntegrationServiceProvider"
 			]
 		}
 	},

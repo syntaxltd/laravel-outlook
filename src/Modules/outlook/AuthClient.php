@@ -1,6 +1,6 @@
 <?php
 
-namespace Syntax\LaravelSocialIntegration\Modules\outlook;
+namespace Syntax\LaravelMailIntegration\Modules\outlook;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -9,12 +9,12 @@ use League\OAuth2\Client\Provider\GenericProvider;
 use League\OAuth2\Client\Token\AccessToken;
 use Microsoft\Graph\Graph;
 use Microsoft\Graph\Model\User;
-use Syntax\LaravelSocialIntegration\Contracts\SocialClientAuth;
-use Syntax\LaravelSocialIntegration\Exceptions\InvalidStateException;
-use Syntax\LaravelSocialIntegration\Models\SocialAccessToken;
+use Syntax\LaravelMailIntegration\Contracts\MailClientAuth;
+use Syntax\LaravelMailIntegration\Exceptions\InvalidStateException;
+use Syntax\LaravelMailIntegration\Models\MailAccessToken;
 use Throwable;
 
-class AuthClient implements SocialClientAuth
+class AuthClient implements MailClientAuth
 {
     public function getAuthorizationUrl(): string
     {
@@ -41,13 +41,13 @@ class AuthClient implements SocialClientAuth
     public function getConfigs(): array
     {
         return [
-            'clientId' => config('laravel-social-integration.services.outlook.appId'),
-            'clientSecret' => config('laravel-social-integration.services.outlook.appSecret'),
-            'redirectUri' => config('laravel-social-integration.services.outlook.redirectUri'),
-            'urlAuthorize' => config('laravel-social-integration.services.outlook.authority') . config('laravel-social-integration.services.outlook.authorizeEndpoint'),
-            'urlAccessToken' => config('laravel-social-integration.services.outlook.authority') . config('laravel-social-integration.services.outlook.tokenEndpoint'),
+            'clientId' => config('laravel-mail-integration.services.outlook.appId'),
+            'clientSecret' => config('laravel-mail-integration.services.outlook.appSecret'),
+            'redirectUri' => config('laravel-mail-integration.services.outlook.redirectUri'),
+            'urlAuthorize' => config('laravel-mail-integration.services.outlook.authority') . config('laravel-mail-integration.services.outlook.authorizeEndpoint'),
+            'urlAccessToken' => config('laravel-mail-integration.services.outlook.authority') . config('laravel-mail-integration.services.outlook.tokenEndpoint'),
             'urlResourceOwnerDetails' => '',
-            'scopes' => config('laravel-social-integration.services.outlook.scopes'),
+            'scopes' => config('laravel-mail-integration.services.outlook.scopes'),
         ];
     }
 
@@ -83,9 +83,9 @@ class AuthClient implements SocialClientAuth
         }
     }
 
-    private function saveToken(AccessToken $accessToken, string $email): SocialAccessToken|Model
+    private function saveToken(AccessToken $accessToken, string $email): AccessToken|Model
     {
-        return SocialAccessToken::query()->updateOrCreate(['partner_user_id' => auth('partneruser')->id()], [
+        return AccessToken::query()->updateOrCreate(['partner_user_id' => auth('partneruser')->id()], [
             'access_token' => $accessToken->getToken(),
             'refresh_token' => $accessToken->getRefreshToken(),
             'expires_at' => $accessToken->getExpires(),
@@ -96,7 +96,7 @@ class AuthClient implements SocialClientAuth
 
     public function clearTokens(): void
     {
-        SocialAccessToken::query()->where('partner_user_id', auth('partneruser')->id())->delete();
+        AccessToken::query()->where('partner_user_id', auth('partneruser')->id())->delete();
     }
 
     /**
@@ -104,8 +104,8 @@ class AuthClient implements SocialClientAuth
      */
     public function getToken(): string
     {
-        /** @var SocialAccessToken|null $accessToken */
-        $accessToken = SocialAccessToken::query()->where('partner_user_id', auth('partneruser')->id())->first();
+        /** @var AccessToken|null $accessToken */
+        $accessToken = AccessToken::query()->where('partner_user_id', auth('partneruser')->id())->first();
 
         // Check if tokens exist
         if (is_null($accessToken)) {

@@ -1,11 +1,12 @@
 <?php
 
 
-namespace Syntax\LaravelSocialIntegration\Modules\gmail\traits;
+namespace Syntax\LaravelMailIntegration\Modules\gmail\traits;
 
 
+use Google_Service_Gmail_MessagePartHeader;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
+use stdClass;
 
 trait HasHeaders
 {
@@ -51,9 +52,9 @@ trait HasHeaders
         $headers = [];
 
         foreach ($emailHeaders as $header) {
-            /** @var \Google_Service_Gmail_MessagePartHeader $header */
+            /** @var Google_Service_Gmail_MessagePartHeader $header */
 
-            $head = new \stdClass();
+            $head = new stdClass();
 
             $head->key = $header->getName();
             $head->value = $header->getValue();

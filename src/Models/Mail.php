@@ -1,6 +1,6 @@
 <?php
 
-namespace Syntax\LaravelSocialIntegration\Models;
+namespace Syntax\LaravelMailIntegration\Models;
 
 use App\Helpers\ConvertArray;
 use App\Models\Company;
@@ -28,7 +28,7 @@ use Illuminate\Support\Collection;
  * @property string $parentable_type
  * @property Collection|array $threads
  * */
-class SocialAccessMail extends Model
+class Mail extends Model
 {
     use HasAttachment;
     
@@ -119,6 +119,6 @@ class SocialAccessMail extends Model
      */
     public function provider(): BelongsTo
     {
-        return $this->belongsTo(SocialAccessToken::class,'token_id');
+        return $this->belongsTo(MailAccessToken::class,'token_id');
     }
 }

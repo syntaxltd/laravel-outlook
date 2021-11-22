@@ -1,6 +1,6 @@
 <?php
 
-namespace Syntax\LaravelSocialIntegration\Modules\outlook;
+namespace Syntax\LaravelMailIntegration\Modules\outlook;
 
 use App\Models\Contact;
 use App\Models\Partner;
@@ -16,13 +16,13 @@ use Microsoft\Graph\Graph;
 use Microsoft\Graph\Model\Attachment;
 use Microsoft\Graph\Model\ChatMessage;
 use Safe\Exceptions\FilesystemException;
-use Syntax\LaravelSocialIntegration\Contracts\SocialClient;
-use Syntax\LaravelSocialIntegration\Models\SocialAccessMail;
-use Syntax\LaravelSocialIntegration\Modules\outlook\messages\Mail;
+use Syntax\LaravelMailIntegration\Contracts\MailClient;
+use Syntax\LaravelMailIntegration\Models\Mail;
+use Syntax\LaravelMailIntegration\Modules\outlook\messages\Mail;
 use Throwable;
 use function Safe\base64_decode;
 
-class LaravelOutlook implements SocialClient
+class LaravelOutlook implements MailClient
 {
     /**
      * @throws Throwable
@@ -42,7 +42,7 @@ class LaravelOutlook implements SocialClient
 
         collect($threads)->each(function (ChatMessage $chatMessage) use ($contact, &$mails, $token) {
             if (!$mails->contains('email_id', $chatMessage->getId())) {
-                /** @var SocialAccessMail $reply */
+                /** @var Mail $reply */
                 $reply = $this->saveReply($chatMessage, $token, $contact);
                 $reply->saveAttachments($this->getAttachments($chatMessage));
                 $mails->add($reply);
@@ -75,7 +75,7 @@ class LaravelOutlook implements SocialClient
         $properties = $message->getProperties();
         $from = $message->getFrom()?->getProperties();
 
-        return SocialAccessMail::query()->create([
+        return Mail::query()->create([
             'email_id' => $message->getId(),
             'parentable_id' => $contact->id,
             'parentable_type' => get_class($contact),

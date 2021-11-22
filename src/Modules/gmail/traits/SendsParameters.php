@@ -1,13 +1,10 @@
 <?php
 
 
-namespace Syntax\LaravelSocialIntegration\Modules\gmail\traits;
+namespace Syntax\LaravelMailIntegration\Modules\gmail\traits;
 
 use Exception;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException;
 
 trait SendsParameters
 {

@@ -1,14 +1,14 @@
 <?php
 
 
-namespace Syntax\LaravelSocialIntegration\Modules\gmail\traits;
+namespace Syntax\LaravelMailIntegration\Modules\gmail\traits;
 
 
 use Exception;
 use Google_Service_Gmail_Message;
 use Swift_Attachment;
 use Swift_Message;
-use Syntax\LaravelSocialIntegration\Modules\gmail\services\Mail;
+use Syntax\LaravelMailIntegration\Modules\gmail\services\GmailMessages;
 
 trait Replyable
 {
@@ -129,10 +129,10 @@ trait Replyable
     /**
      * Reply to a specific email
      *
-     * @return Mail
+     * @return GmailMessages
      * @throws Exception
      */
-    public function reply(): Mail
+    public function reply(): GmailMessages
     {
         if (!$this->getId()) {
             throw new Exception('This is a new email. Use send().');
@@ -145,7 +145,7 @@ trait Replyable
         $body = $this->getMessageBody();
         $body->setThreadId($this->getThreadId());
 
-        return new Mail($this->service->users_messages->send('me', $body));
+        return new GmailMessages($this->service->users_messages->send('me', $body));
     }
 
 

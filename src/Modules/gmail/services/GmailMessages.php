@@ -1,6 +1,6 @@
 <?php
 
-namespace Syntax\LaravelSocialIntegration\Modules\gmail\services;
+namespace Syntax\LaravelMailIntegration\Modules\gmail\services;
 
 use App\Models\Partner;
 use Exception;
@@ -9,16 +9,14 @@ use Google_Service_Gmail_Message;
 use Google_Service_Gmail_MessagePart;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Syntax\LaravelSocialIntegration\Models\SocialAccessToken;
-use Syntax\LaravelSocialIntegration\Modules\gmail\traits\HasParts;
-use Syntax\LaravelSocialIntegration\Modules\gmail\traits\Replyable;
+use Syntax\LaravelMailIntegration\Models\MailAccessToken;
+use Syntax\LaravelMailIntegration\Modules\gmail\traits\Replyable;
 use function Safe\base64_decode;
 
-class Mail extends GmailConnection
+class GmailMessages extends GmailConnection
 {
-    use Replyable, HasParts;
+    use Replyable;
 
     public Google_Service_Gmail_MessagePart $payload;
 
@@ -189,8 +187,8 @@ class Mail extends GmailConnection
      */
     public function getUser(): string
     {
-        /** @var SocialAccessToken $user */
-        $user = SocialAccessToken::Where('partner_user_id', Auth::id())->where('type', 'gmail')->first();
+        /** @var MailAccessToken $user */
+        $user = MailAccessToken::Where('partner_user_id', Auth::id())->where('type', 'gmail')->first();
         return $user->email;
     }
 

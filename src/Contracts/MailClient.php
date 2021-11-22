@@ -1,10 +1,10 @@
 <?php
 
-namespace Syntax\LaravelSocialIntegration\Contracts;
+namespace Syntax\LaravelMailIntegration\Contracts;
 
 use Illuminate\Http\Request;
 
-interface SocialClient
+interface MailClient
 {
     public function send(Request $request);
 }

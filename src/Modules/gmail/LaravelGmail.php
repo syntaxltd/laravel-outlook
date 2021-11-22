@@ -1,29 +1,24 @@
 <?php
 
 
-namespace Syntax\LaravelSocialIntegration\Modules\gmail;
+namespace Syntax\LaravelMailIntegration\Modules\gmail;
 
 use App\Models\Contact;
 use App\Models\PartnerUser;
 use Exception;
-use Google\Cloud\PubSub\PubSubClient;
-use Google\Service\Gmail;
+use Google\Service\Gmail\Message;
 use Google_Service_Gmail;
 use Google_Service_Gmail_Message;
 use Google_Service_Gmail_WatchRequest;
-use Google_Service_Gmail_WatchResponse;
-use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Syntax\LaravelSocialIntegration\Contracts\SocialClient;
-use Syntax\LaravelSocialIntegration\Models\SocialAccessMail;
-use Syntax\LaravelSocialIntegration\Modules\gmail\services\GmailConnection;
-use Syntax\LaravelSocialIntegration\Modules\gmail\services\Mail;
+use Syntax\LaravelMailIntegration\Contracts\MailClient;
+use Syntax\LaravelMailIntegration\Models\Mail;
+use Syntax\LaravelMailIntegration\Modules\gmail\services\GmailConnection;
+use Syntax\LaravelMailIntegration\Modules\gmail\services\GmailMessages;
 use Throwable;
 
-class LaravelGmail extends GmailConnection implements SocialClient
+class LaravelGmail extends GmailConnection implements MailClient
 {
     public function auth(): AuthClient
     {
@@ -42,7 +37,7 @@ class LaravelGmail extends GmailConnection implements SocialClient
         /** @var PartnerUser $user */
         $user = auth('partneruser')->user();
 
-        $mail = new Mail();
+        $mail = new GmailMessages();
         $mail->to(['eva.mwangi@synt.ax']);
         $mail->from($user->email, $user->name);
         $mail->cc($request->input('cc'));
@@ -93,7 +88,7 @@ class LaravelGmail extends GmailConnection implements SocialClient
      */
     public function reply(Request $request): array
     {
-        $mail = new Mail($this->get($request->input('email_id')));
+        $mail = new GmailMessages($this->get($request->input('email_id')));
         $mail->to($this->getContacts($request));
         $mail->cc($request->input('cc'));
         $mail->bcc($request->input('bcc'));
@@ -127,10 +122,10 @@ class LaravelGmail extends GmailConnection implements SocialClient
             $response = $this->service->users_threads->get('me', $email);
             $threads = $response->getMessages();
             foreach ($threads as $thread) {
-                $mail = new Mail($thread);
+                $mail = new GmailMessages($thread);
                 if(!$mails->contains('history_id', $mail->getHistoryId()) && $mail->getHtmlBody()) {
-                    /** @var SocialAccessMail $reply */
-                    $reply = SocialAccessMail::query()->create([
+                    /** @var Mail $reply */
+                    $reply = Mail::query()->create([
                         'history_id' => $mail->getHistoryId(),
                         'parentable_id' => $contact->id,
                         'parentable_type' => get_class($contact),
@@ -182,8 +177,8 @@ class LaravelGmail extends GmailConnection implements SocialClient
      */
     public function setWatch(): array
     {
-        $projectId = config('laravel-social-integration.services.gmail.project_id');
-        $rq = new \Google_Service_Gmail_WatchRequest();
+        $projectId = config('laravel-mail-integration.services.gmail.project_id');
+        $rq = new Google_Service_Gmail_WatchRequest();
         $rq->setTopicName('projects/'.$projectId.'/topics/mykii');
         $history = $this->service->users->watch('me', $rq);
         $historyList = $this->service->users_history->listUsersHistory('me', [
@@ -199,7 +194,7 @@ class LaravelGmail extends GmailConnection implements SocialClient
         return $mails;
     }
 
-    public function delete(SocialAccessMail $mail): Google_Service_Gmail_Message
+    public function delete(Mail $mail): Message
     {
        return $this->service->users_messages->trash('me', $mail->email_id);
     }

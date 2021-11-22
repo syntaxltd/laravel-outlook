@@ -1,14 +1,13 @@
 <?php
 
-namespace Syntax\LaravelSocialIntegration\Modules\gmail\traits;
+namespace Syntax\LaravelMailIntegration\Modules\gmail\traits;
 
 use Google_Service_Gmail;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Trait Configurable
- * @package Syntax\LaravelSocialIntegration\Traits
+ * @package Syntax\LaravelMailIntegration\Traits
  */
 trait Configurable
 {
@@ -18,10 +17,10 @@ trait Configurable
     public function getConfigs()
     {
         return [
-            'client_secret' => config('laravel-social-integration.services.gmail.client_secret'),
-            'client_id' => config('laravel-social-integration.services.gmail.client_id'),
-            'redirect_uri' => url(config('laravel-social-integration.services.gmail.redirect_url')),
-            'state' => config('laravel-social-integration.services.gmail.state') ?? null,
+            'client_secret' => config('laravel-mail-integration.services.gmail.client_secret'),
+            'client_id' => config('laravel-mail-integration.services.gmail.client_id'),
+            'redirect_uri' => url(config('laravel-mail-integration.services.gmail.redirect_url')),
+            'state' => config('laravel-mail-integration.services.gmail.state') ?? null,
         ];
     }
 
@@ -33,8 +32,8 @@ trait Configurable
 
     private function configApi()
     {
-        $type = config('laravel-social-integration.services.gmail.access_type');
-        $approval_prompt = config('laravel-social-integration.services.gmail.approval_prompt');
+        $type = config('laravel-mail-integration.services.gmail.access_type');
+        $approval_prompt = config('laravel-mail-integration.services.gmail.approval_prompt');
 
         $this->setScopes($this->getUserScopes());
 
@@ -57,7 +56,7 @@ trait Configurable
 
     private function mapScopes(): array
     {
-        $scopes = config('laravel-social-integration.services.gmail.scopes');
+        $scopes = config('laravel-mail-integration.services.gmail.scopes');
         $scopes = array_unique(array_filter($scopes));
         $mappedScopes = [];
 

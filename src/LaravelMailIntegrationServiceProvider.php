@@ -1,12 +1,12 @@
 <?php
 
-namespace Syntax\LaravelSocialIntegration;
+namespace Syntax\LaravelMailIntegration;
 
 use Illuminate\Support\ServiceProvider;
 use Safe\Exceptions\DatetimeException;
 use function Safe\date;
 
-class LaravelSocialIntegrationServiceProvider extends ServiceProvider
+class LaravelMailIntegrationServiceProvider extends ServiceProvider
 {
     /**
      * This namespace is applied to your controller routes.
@@ -26,14 +26,14 @@ class LaravelSocialIntegrationServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->publishes([
-            __DIR__ . '/../config/laravel-social-integration.php' => config_path('laravel-social-integration.php'),
+            __DIR__ . '/../config/laravel-mail-integration.php' => config_path('laravel-mail-integration.php'),
         ]);
 
         if ($this->app->runningInConsole()) {
             // Export the migration
-            if (!class_exists('CreateSocialAccessTokensTable')) {
+            if (!class_exists('CreateMailAccessTokensTable')) {
                 $this->publishes([
-                    __DIR__ . '/../database/migrations/create_social_access_tokens_table.php.stub' => database_path('migrations' . date('Y_m_d_His', time()) . '_create_social_access_tokens.php'),
+                    __DIR__ . '/../database/migrations/create_mail_access_tokens_table.php.stub' => database_path('migrations' . date('Y_m_d_His', time()) . '_create_social_access_tokens.php'),
                 ], 'migrations ');
             }
         }
@@ -46,8 +46,8 @@ class LaravelSocialIntegrationServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->bind('laravel-social', function ($app, $client) {
-            return LaravelSocialIntegration::service($client['client']);
+        $this->app->bind('laravel-mail', function ($app, $client) {
+            return LaravelMailIntegration::service($client['client']);
         });
     }
 }

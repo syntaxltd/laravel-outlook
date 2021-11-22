@@ -1,6 +1,6 @@
 <?php
 
-namespace Syntax\LaravelSocialIntegration\Models;
+namespace Syntax\LaravelMailIntegration\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $email
  * @property string $type
  */
-class SocialAccessToken extends Model
+class MailAccessToken extends Model
 {
     use HasFactory;
 

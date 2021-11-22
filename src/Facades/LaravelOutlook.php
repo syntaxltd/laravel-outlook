@@ -1,6 +1,6 @@
 <?php
 
-namespace Syntax\LaravelSocialIntegration\Facades;
+namespace Syntax\LaravelMailIntegration\Facades;
 
 use Illuminate\Support\Facades\Facade;
 use RuntimeException;

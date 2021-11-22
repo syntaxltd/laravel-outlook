@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateSocialAccessMailsTable extends Migration
+class CreateMailsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,7 +13,7 @@ class CreateSocialAccessMailsTable extends Migration
      */
     public function up()
     {
-        Schema::create('social_access_mails', function (Blueprint $table) {
+        Schema::create('mails', function (Blueprint $table) {
             $table->id();
             $table->foreignId('token_id')->nullable()->constrained('social_access_tokens')->nullOnDelete();
             $table->string('email_id');
@@ -33,6 +33,6 @@ class CreateSocialAccessMailsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('social_access_mails');
+        Schema::dropIfExists('mails');
     }
 }

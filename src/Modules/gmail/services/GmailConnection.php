@@ -1,14 +1,13 @@
 <?php
 
 
-namespace Syntax\LaravelSocialIntegration\Modules\gmail\services;
+namespace Syntax\LaravelMailIntegration\Modules\gmail\services;
 
 use Google_Client;
 use Google_Service_Gmail;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Syntax\LaravelSocialIntegration\Models\SocialAccessToken;
-use Syntax\LaravelSocialIntegration\Modules\gmail\traits\Configurable;
+use Syntax\LaravelMailIntegration\Models\MailAccessToken;
+use Syntax\LaravelMailIntegration\Modules\gmail\traits\Configurable;
 
 class GmailConnection extends Google_Client
 {
@@ -43,7 +42,7 @@ class GmailConnection extends Google_Client
     public function isAccessTokenExpired(): bool
     {
         // Change to get Social Access Token for authenticated users
-        $token = parent::getAccessToken() ? [parent::getAccessToken()] : SocialAccessToken::Where('partner_user_id', Auth::id())->where('type', 'gmail')->get()->toArray();
+        $token = parent::getAccessToken() ? [parent::getAccessToken()] : MailAccessToken::Where('partner_user_id', Auth::id())->where('type', 'gmail')->get()->toArray();
         if (!empty($token)) {
             $this->setAccessToken($token[0]);
             return true;

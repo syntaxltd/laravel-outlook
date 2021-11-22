@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateSocialAccessMailables extends Migration
+class CreateMailables extends Migration
 {
     /**
      * Run the migrations.
@@ -13,7 +13,7 @@ class CreateSocialAccessMailables extends Migration
      */
     public function up()
     {
-        Schema::create('social_access_mailables', function (Blueprint $table) {
+        Schema::create('mailables', function (Blueprint $table) {
             $table->id();
             $table->foreignId('social_access_mail_id')->constrained()->onDelete('cascade');
             $table->integer('social_access_mailable_id');
@@ -28,6 +28,6 @@ class CreateSocialAccessMailables extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('social_access_mailables');
+        Schema::dropIfExists('mailables');
     }
 }
