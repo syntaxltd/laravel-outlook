@@ -51,6 +51,8 @@ return [
             'allow_multiple_credentials' => env('GOOGLE_ALLOW_MULTIPLE_CREDENTIALS', false),
 
             'allow_json_encrypt' => env('GOOGLE_ALLOW_JSON_ENCRYPT', false),
+
+            'credentials_file_name' => env('GOOGLE_APPLICATION_CREDENTIALS', 'gmail.json')
         ],
     ],
 

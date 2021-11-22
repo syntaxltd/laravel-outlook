@@ -6,10 +6,17 @@ namespace Syntax\LaravelSocialIntegration\Modules\gmail;
 use App\Models\Contact;
 use App\Models\PartnerUser;
 use Exception;
+use Google\Cloud\PubSub\PubSubClient;
+use Google\Service\Gmail;
+use Google_Service_Gmail;
 use Google_Service_Gmail_Message;
+use Google_Service_Gmail_WatchRequest;
+use Google_Service_Gmail_WatchResponse;
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Syntax\LaravelSocialIntegration\Contracts\SocialClient;
 use Syntax\LaravelSocialIntegration\Models\SocialAccessMail;
 use Syntax\LaravelSocialIntegration\Modules\gmail\services\GmailConnection;
@@ -149,6 +156,45 @@ class LaravelGmail extends GmailConnection implements SocialClient
                 }
             }
         });
+
+        return $mails;
+    }
+
+
+    /**
+     * users.stop receiving push notifications for the given user mailbox.
+     *
+     * @param  string  $userEmail  Email address
+     * @param  array  $optParams
+     * @return Google_Service_Gmail
+     */
+    public function stopWatch(string $userEmail, array $optParams = []): Google_Service_Gmail
+    {
+        $service = new Google_Service_Gmail($this);
+
+        return $service->users->stop($userEmail, $optParams);
+    }
+
+    /**
+     * Set up or update a push notification watch on the given user mailbox.
+     *
+     * @return array
+     */
+    public function setWatch(): array
+    {
+        $projectId = config('laravel-social-integration.services.gmail.project_id');
+        $rq = new \Google_Service_Gmail_WatchRequest();
+        $rq->setTopicName('projects/'.$projectId.'/topics/mykii');
+        $history = $this->service->users->watch('me', $rq);
+        $historyList = $this->service->users_history->listUsersHistory('me', [
+            'startHistoryId' => $history->historyId
+        ]);
+        $mails = [];
+        foreach ($historyList->history as $chunk) {
+            foreach ($chunk->messages as $msg) {
+                $mails[] = $msg;
+            }
+        }
 
         return $mails;
     }
