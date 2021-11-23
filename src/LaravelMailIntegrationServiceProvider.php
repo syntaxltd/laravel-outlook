@@ -4,6 +4,8 @@ namespace Syntax\LaravelMailIntegration;
 
 use Illuminate\Support\ServiceProvider;
 use Safe\Exceptions\DatetimeException;
+use Syntax\LaravelMailIntegration\Models\MailAccessToken;
+use Syntax\LaravelMailIntegration\Observers\MailAccessObserver;
 use function Safe\date;
 
 class LaravelMailIntegrationServiceProvider extends ServiceProvider
@@ -37,6 +39,7 @@ class LaravelMailIntegrationServiceProvider extends ServiceProvider
                 ], 'migrations ');
             }
         }
+        MailAccessToken::observe(MailAccessObserver::class);
     }
 
     /**

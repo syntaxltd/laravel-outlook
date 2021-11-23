@@ -5,7 +5,7 @@ namespace Syntax\LaravelMailIntegration\Modules\outlook\messages;
 use Safe\Exceptions\FilesystemException;
 use function Safe\file_get_contents;
 
-class Mail
+class Message
 {
     private string $subject;
 
@@ -29,7 +29,7 @@ class Mail
 
     /**
      * @param string $subject
-     * @return Mail
+     * @return Message
      */
     public function setSubject(string $subject): self
     {
@@ -40,7 +40,7 @@ class Mail
 
     /**
      * @param string $content
-     * @return Mail
+     * @return Message
      */
     public function setContent(string $content): self
     {
@@ -54,7 +54,7 @@ class Mail
 
     /**
      * @param array $recipients
-     * @return Mail
+     * @return Message
      */
     public function setRecipients(array $recipients): self
     {
@@ -72,7 +72,7 @@ class Mail
 
     /**
      * @param array|null $attachments
-     * @return Mail
+     * @return Message
      * @throws FilesystemException
      */
     public function setAttachments(?array $attachments): self
@@ -91,7 +91,7 @@ class Mail
 
     /**
      * @param array|null $cc
-     * @return Mail
+     * @return Message
      */
     public function setCc(?array $cc): self
     {
@@ -109,7 +109,7 @@ class Mail
 
     /**
      * @param array|null $bcc
-     * @return Mail
+     * @return Message
      */
     public function setBcc(?array $bcc): self
     {
@@ -127,7 +127,7 @@ class Mail
 
     /**
      * @param bool $saveToSentItems
-     * @return Mail
+     * @return Message
      */
     public function setSaveToSentItems(bool $saveToSentItems): self
     {
@@ -138,7 +138,7 @@ class Mail
 
     /**
      * @param string $contentType
-     * @return Mail
+     * @return Message
      */
     public function setContentType(string $contentType): self
     {
@@ -149,7 +149,7 @@ class Mail
 
     /**
      * @param string $uuid
-     * @return Mail
+     * @return Message
      */
     public function setUuid(string $uuid): self
     {
@@ -160,7 +160,7 @@ class Mail
 
     /**
      * @param string $comment
-     * @return Mail
+     * @return Message
      */
     public function setComment(string $comment): self
     {

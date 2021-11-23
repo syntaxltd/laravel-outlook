@@ -3,8 +3,10 @@
 
 namespace Syntax\LaravelMailIntegration\Modules\gmail;
 
+use Google\Service\Gmail\WatchResponse;
 use Google_Service_Gmail;
 use Google_Service_Gmail_Profile;
+use Google_Service_Gmail_WatchRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Syntax\LaravelMailIntegration\Contracts\MailClientAuth;
@@ -17,11 +19,15 @@ class AuthClient extends \Google_Client implements MailClientAuth
 {
     use Configurable;
 
+    public Google_Service_Gmail $service;
+
     public function __construct()
     {
         parent::__construct($this->getConfigs());
 
         $this->configApi();
+
+        $this->service = new Google_Service_Gmail($this);
     }
 
     public function getAuthorizationUrl(): string
@@ -77,9 +83,7 @@ class AuthClient extends \Google_Client implements MailClientAuth
      */
     public function getProfile(): Google_Service_Gmail_Profile
     {
-        $service = new Google_Service_Gmail($this);
-
-        return $service->users->getProfile('me');
+        return $this->service->users->getProfile('me');
     }
 
     public function clearTokens(): void
@@ -89,4 +93,30 @@ class AuthClient extends \Google_Client implements MailClientAuth
         // Change to get Social Access Token for authenticated users
         MailAccessToken::Where('partner_user_id', Auth::id())->where('type', 'gmail')->delete();
     }
+
+    /**
+     * users.stop receiving push notifications for the given user mailbox.
+     *
+     * @param  string  $userEmail  Email address
+     * @param  array  $optParams
+     * @return Google_Service_Gmail
+     */
+    public function stopWatch(string $userEmail, array $optParams = []): Google_Service_Gmail
+    {
+        return $this->service->users->stop($userEmail, $optParams);
+    }
+
+    /**
+     * Set up or update a push notification watch on the given user mailbox.
+     *
+     * @return WatchResponse
+     */
+    public function setWatch(): WatchResponse
+    {
+        $projectId = config('laravel-mail-integration.services.gmail.project_id');
+        $rq = new Google_Service_Gmail_WatchRequest();
+        $rq->setTopicName('projects/'.$projectId.'/topics/mykii');
+        return $this->service->users->watch('me', $rq);
+    }
+
 }

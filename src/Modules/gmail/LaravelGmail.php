@@ -12,14 +12,22 @@ use Google_Service_Gmail_Message;
 use Google_Service_Gmail_WatchRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
+use Safe\Exceptions\UrlException;
 use Syntax\LaravelMailIntegration\Contracts\MailClient;
 use Syntax\LaravelMailIntegration\Models\Mail;
 use Syntax\LaravelMailIntegration\Modules\gmail\services\GmailConnection;
 use Syntax\LaravelMailIntegration\Modules\gmail\services\GmailMessages;
 use Throwable;
+use function Safe\base64_decode;
 
 class LaravelGmail extends GmailConnection implements MailClient
 {
+    public function __construct(string $userId = null)
+    {
+        parent::__construct($userId);
+    }
+
     public function auth(): AuthClient
     {
         return new AuthClient();
@@ -155,41 +163,43 @@ class LaravelGmail extends GmailConnection implements MailClient
         return $mails;
     }
 
-
     /**
-     * users.stop receiving push notifications for the given user mailbox.
-     *
-     * @param  string  $userEmail  Email address
-     * @param  array  $optParams
-     * @return Google_Service_Gmail
+     * @throws UrlException
      */
-    public function stopWatch(string $userEmail, array $optParams = []): Google_Service_Gmail
+    public function historyList(Collection $mails, string $token): Collection
     {
-        $service = new Google_Service_Gmail($this);
-
-        return $service->users->stop($userEmail, $optParams);
-    }
-
-    /**
-     * Set up or update a push notification watch on the given user mailbox.
-     *
-     * @return array
-     */
-    public function setWatch(): array
-    {
-        $projectId = config('laravel-mail-integration.services.gmail.project_id');
-        $rq = new Google_Service_Gmail_WatchRequest();
-        $rq->setTopicName('projects/'.$projectId.'/topics/mykii');
-        $history = $this->service->users->watch('me', $rq);
-        $historyList = $this->service->users_history->listUsersHistory('me', [
-            'startHistoryId' => $history->historyId
-        ]);
-        $mails = [];
-        foreach ($historyList->history as $chunk) {
-            foreach ($chunk->messages as $msg) {
-                $mails[] = $msg;
+        Log::info('called');
+        // Get unique thread ids
+        $unique = $mails->unique('thread_id')->toArray();
+        collect($unique)->each(function ($email) use ($token, $mails) {
+            $response = $this->service->users_threads->get('me', $email['thread_id']);
+            $threads = $response->getMessages();
+            foreach ($threads as $thread) {
+                $mail = new GmailMessages($thread);
+                if(!$mails->contains('history_id', $mail->getHistoryId()) && $mail->getHtmlBody()) {
+                    /** @var Mail $reply */
+                    $reply = Mail::query()->create([
+                        'history_id' => $mail->getHistoryId(),
+                        'parentable_id' => $email['parentable_id'],
+                        'parentable_type' => $email['parentable_type'],
+                        'thread_id' => $mail->threadId,
+                        'token_id' => $token,
+                        'email_id' => $mail->id,
+                        'created_at' => $mail->internalDate,
+                        'updated_at' => $mail->internalDate,
+                        'data' => [
+                            'contact' => [],
+                            'from' => $mail->getFrom(),
+                            'to' => $mail->getTo(),
+                            'subject' => $mail->subject,
+                            'content' => $mail->getHtmlBody(),
+                        ],
+                    ]);
+                    $reply->saveAttachments($mail->getAttachments());
+                    $mails->add($reply);
+                }
             }
-        }
+        });
 
         return $mails;
     }

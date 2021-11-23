@@ -16,7 +16,7 @@ class LaravelMailIntegration
      * @return mixed
      * @throws Throwable
      */
-    public static function service(string $client): mixed
+    public static function service(string $client, string $userId = null): mixed
     {
         throw_if(!in_array($client, config('laravel-mail-integration.default')), new InvalidClientException);
 
@@ -25,7 +25,7 @@ class LaravelMailIntegration
             'outlook' => LaravelOutlook::class,
         ];
 
-        return new $services[$client];
+        return new $services[$client]($userId);
     }
 
     public function getProviders(): mixed

@@ -18,12 +18,18 @@ use Microsoft\Graph\Model\ChatMessage;
 use Safe\Exceptions\FilesystemException;
 use Syntax\LaravelMailIntegration\Contracts\MailClient;
 use Syntax\LaravelMailIntegration\Models\Mail;
-use Syntax\LaravelMailIntegration\Modules\outlook\messages\Mail;
+use Syntax\LaravelMailIntegration\Modules\outlook\messages\Message;
 use Throwable;
 use function Safe\base64_decode;
 
 class LaravelOutlook implements MailClient
 {
+    public function __construct(string $userId = null)
+    {
+
+    }
+
+
     /**
      * @throws Throwable
      * @throws GraphException
@@ -42,7 +48,7 @@ class LaravelOutlook implements MailClient
 
         collect($threads)->each(function (ChatMessage $chatMessage) use ($contact, &$mails, $token) {
             if (!$mails->contains('email_id', $chatMessage->getId())) {
-                /** @var Mail $reply */
+                /** @var Message $reply */
                 $reply = $this->saveReply($chatMessage, $token, $contact);
                 $reply->saveAttachments($this->getAttachments($chatMessage));
                 $mails->add($reply);
@@ -75,7 +81,7 @@ class LaravelOutlook implements MailClient
         $properties = $message->getProperties();
         $from = $message->getFrom()?->getProperties();
 
-        return Mail::query()->create([
+        return Message::query()->create([
             'email_id' => $message->getId(),
             'parentable_id' => $contact->id,
             'parentable_type' => get_class($contact),
@@ -159,12 +165,12 @@ class LaravelOutlook implements MailClient
     /**
      * @param Request $request
      * @param string $uuid
-     * @return Mail
+     * @return Message
      * @throws FilesystemException
      */
-    protected function getMessage(Request $request, string $uuid): Mail
+    protected function getMessage(Request $request, string $uuid): Message
     {
-        return (new Mail)->setSubject($request->input('subject'))
+        return (new Message)->setSubject($request->input('subject'))
             ->setContentType('HTML')
             ->setContent($request->input('content'))
             ->setUuid($uuid)
