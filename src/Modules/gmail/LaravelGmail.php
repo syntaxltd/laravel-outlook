@@ -3,7 +3,6 @@
 
 namespace Syntax\LaravelMailIntegration\Modules\gmail;
 
-use App\Models\Contact;
 use App\Models\PartnerUser;
 use Exception;
 use Google\Service\Gmail\Message;
@@ -120,6 +119,7 @@ class LaravelGmail extends GmailConnection implements MailClient
      */
     public function checkReplies(Collection $mails, string $token): Collection
     {
+
         // Get unique thread ids
         $unique = $mails->unique('thread_id')->toArray();
         collect($unique)->each(function ($email) use ($token, $mails) {
@@ -146,6 +146,7 @@ class LaravelGmail extends GmailConnection implements MailClient
                             'content' => $mail->getHtmlBody(),
                         ],
                     ]);
+                    $this->saveAssociations($reply, $email['associations']);
                     $reply->saveAttachments($mail->getAttachments());
                     $mails->add($reply);
                 }
@@ -155,6 +156,26 @@ class LaravelGmail extends GmailConnection implements MailClient
         return $mails;
     }
 
+    /**
+     * Save note associations.
+     *
+     * @param Mail $mail
+     * @param array $associations
+     */
+    public function saveAssociations(Mail $mail, array $associations): void
+    {
+        $mail->contacts()->sync($this->convertToArray($associations['contacts']));
+        $mail->companies()->sync($this->convertToArray($associations['companies']));
+        $mail->properties()->sync($this->convertToArray($associations['properties']));
+        $mail->deals()->sync($this->convertToArray($associations['deals']));
+    }
+
+    private function convertToArray(Collection $values): array
+    {
+        return $values->filter()->map(function ($item) {
+            return $item['id'];
+        })->toArray();
+    }
     public function delete(Mail $mail): Message
     {
        return $this->service->users_messages->trash('me', $mail->email_id);
