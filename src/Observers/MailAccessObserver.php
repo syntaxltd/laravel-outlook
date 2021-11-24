@@ -16,7 +16,7 @@ class MailAccessObserver
      */
     public function created(MailAccessToken $mailAccessToken)
     {
-        CentralMail::create([
+        CentralMail::query()->updateOrCreate([
             'tenant_id' => tenant('id'),
             'email' => $mailAccessToken->email
         ]);

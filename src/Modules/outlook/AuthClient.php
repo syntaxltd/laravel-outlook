@@ -4,6 +4,7 @@ namespace Syntax\LaravelMailIntegration\Modules\outlook;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Provider\GenericProvider;
 use League\OAuth2\Client\Token\AccessToken;
@@ -83,9 +84,9 @@ class AuthClient implements MailClientAuth
         }
     }
 
-    private function saveToken(AccessToken $accessToken, string $email): AccessToken|Model
+    private function saveToken(AccessToken $accessToken, string $email): MailAccessToken|Model
     {
-        return AccessToken::query()->updateOrCreate(['partner_user_id' => auth('partneruser')->id()], [
+        return MailAccessToken::query()->updateOrCreate(['partner_user_id' => auth('partneruser')->id()], [
             'access_token' => $accessToken->getToken(),
             'refresh_token' => $accessToken->getRefreshToken(),
             'expires_at' => $accessToken->getExpires(),
@@ -96,7 +97,7 @@ class AuthClient implements MailClientAuth
 
     public function clearTokens(): void
     {
-        AccessToken::query()->where('partner_user_id', auth('partneruser')->id())->delete();
+        MailAccessToken::query()->where('partner_user_id', auth('partneruser')->id())->delete();
     }
 
     /**
@@ -104,8 +105,8 @@ class AuthClient implements MailClientAuth
      */
     public function getToken(): string
     {
-        /** @var AccessToken|null $accessToken */
-        $accessToken = AccessToken::query()->where('partner_user_id', auth('partneruser')->id())->first();
+        /** @var MailAccessToken|null $accessToken */
+        $accessToken = MailAccessToken::query()->where('partner_user_id', auth('partneruser')->id())->first();
 
         // Check if tokens exist
         if (is_null($accessToken)) {

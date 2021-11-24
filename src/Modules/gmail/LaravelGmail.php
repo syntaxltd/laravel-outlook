@@ -7,19 +7,15 @@ use App\Models\Contact;
 use App\Models\PartnerUser;
 use Exception;
 use Google\Service\Gmail\Message;
-use Google_Service_Gmail;
 use Google_Service_Gmail_Message;
-use Google_Service_Gmail_WatchRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
 use Safe\Exceptions\UrlException;
 use Syntax\LaravelMailIntegration\Contracts\MailClient;
 use Syntax\LaravelMailIntegration\Models\Mail;
 use Syntax\LaravelMailIntegration\Modules\gmail\services\GmailConnection;
 use Syntax\LaravelMailIntegration\Modules\gmail\services\GmailMessages;
 use Throwable;
-use function Safe\base64_decode;
 
 class LaravelGmail extends GmailConnection implements MailClient
 {
@@ -164,11 +160,10 @@ class LaravelGmail extends GmailConnection implements MailClient
     }
 
     /**
-     * @throws UrlException
+     * @throws UrlException|Exception
      */
     public function historyList(Collection $mails, string $token): Collection
     {
-        Log::info('called');
         // Get unique thread ids
         $unique = $mails->unique('thread_id')->toArray();
         collect($unique)->each(function ($email) use ($token, $mails) {
@@ -188,7 +183,7 @@ class LaravelGmail extends GmailConnection implements MailClient
                         'created_at' => $mail->internalDate,
                         'updated_at' => $mail->internalDate,
                         'data' => [
-                            'contact' => [],
+                            'contact' => $email['data']['contact'],
                             'from' => $mail->getFrom(),
                             'to' => $mail->getTo(),
                             'subject' => $mail->subject,
