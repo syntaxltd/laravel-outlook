@@ -116,53 +116,9 @@ class LaravelGmail extends GmailConnection implements MailClient
     }
 
     /**
-     * @throws Exception
-     */
-    public function checkReplies(Contact $contact, Collection $mails, string $token): Collection
-    {
-        // Get unique thread ids
-        $unique = $mails->unique('thread_id')->pluck('thread_id')->toArray();
-        collect($unique)->each(function ($email) use ($token, $contact, $mails) {
-            $response = $this->service->users_threads->get('me', $email);
-            $threads = $response->getMessages();
-            foreach ($threads as $thread) {
-                $mail = new GmailMessages($thread);
-                if(!$mails->contains('history_id', $mail->getHistoryId()) && $mail->getHtmlBody()) {
-                    /** @var Mail $reply */
-                    $reply = Mail::query()->create([
-                        'history_id' => $mail->getHistoryId(),
-                        'parentable_id' => $contact->id,
-                        'parentable_type' => get_class($contact),
-                        'thread_id' => $mail->threadId,
-                        'token_id' => $token,
-                        'email_id' => $mail->id,
-                        'created_at' => $mail->internalDate,
-                        'updated_at' => $mail->internalDate,
-                        'data' => [
-                            'contact' => [[
-                                'id' => $contact->id,
-                                'name' => $contact->name,
-                                'email' => $contact->email,
-                            ]],
-                            'from' => $mail->getFrom(),
-                            'to' => $mail->getTo(),
-                            'subject' => $mail->subject,
-                            'content' => $mail->getHtmlBody(),
-                        ],
-                    ]);
-                    $reply->saveAttachments($mail->getAttachments());
-                    $mails->add($reply);
-                }
-            }
-        });
-
-        return $mails;
-    }
-
-    /**
      * @throws UrlException|Exception
      */
-    public function historyList(Collection $mails, string $token): Collection
+    public function checkReplies(Collection $mails, string $token): Collection
     {
         // Get unique thread ids
         $unique = $mails->unique('thread_id')->toArray();

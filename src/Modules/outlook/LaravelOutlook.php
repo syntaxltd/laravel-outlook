@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Microsoft\Graph\Exception\GraphException;
@@ -24,9 +25,12 @@ use function Safe\base64_decode;
 
 class LaravelOutlook implements MailClient
 {
+    public string|null $userId;
+
     public function __construct(string $userId = null)
     {
 
+        $this->userId = $userId;
     }
 
 
@@ -48,7 +52,7 @@ class LaravelOutlook implements MailClient
 
         collect($threads)->each(function (ChatMessage $chatMessage) use ($contact, &$mails, $token) {
             if (!$mails->contains('email_id', $chatMessage->getId())) {
-                /** @var Message $reply */
+                /** @var Mail $reply */
                 $reply = $this->saveReply($chatMessage, $token, $contact);
                 $reply->saveAttachments($this->getAttachments($chatMessage));
                 $mails->add($reply);
@@ -81,7 +85,7 @@ class LaravelOutlook implements MailClient
         $properties = $message->getProperties();
         $from = $message->getFrom()?->getProperties();
 
-        return Message::query()->create([
+        return Mail::query()->create([
             'email_id' => $message->getId(),
             'parentable_id' => $contact->id,
             'parentable_type' => get_class($contact),
@@ -157,7 +161,7 @@ class LaravelOutlook implements MailClient
             'email_id' => $mail->getId(),
             'thread_id' => $properties['conversationId'],
             'subject' => $mail->getSubject(),
-            'message' => $mail->getBody(),
+            'message' => $mail->getBody()?->getContent(),
             'to' => collect($properties['toRecipients'])->map(fn($recipient) => $recipient['emailAddress'])->toArray()
         ];
     }
@@ -212,7 +216,7 @@ class LaravelOutlook implements MailClient
             'email_id' => $mail->getId(),
             'thread_id' => $properties['conversationId'],
             'subject' => $mail->getSubject(),
-            'message' => $mail->getBody(),
+            'message' => $mail->getBody()?->getContent(),
             'to' => collect($properties['toRecipients'])->map(fn($recipient) => $recipient['emailAddress'])->toArray()
         ];
     }
