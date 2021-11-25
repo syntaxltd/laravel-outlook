@@ -8,6 +8,8 @@ use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Microsoft\Graph\Exception\GraphException;
@@ -17,12 +19,21 @@ use Microsoft\Graph\Model\ChatMessage;
 use Safe\Exceptions\FilesystemException;
 use Syntax\LaravelMailIntegration\Contracts\MailClient;
 use Syntax\LaravelMailIntegration\Models\Mail;
-use Syntax\LaravelMailIntegration\Modules\outlook\messages\Mail as Message;
+use Syntax\LaravelMailIntegration\Modules\outlook\messages\Message;
 use Throwable;
 use function Safe\base64_decode;
 
 class LaravelOutlook implements MailClient
 {
+    public string|null $userId;
+
+    public function __construct(string $userId = null)
+    {
+
+        $this->userId = $userId;
+    }
+
+
     /**
      * @throws Throwable
      * @throws GraphException
@@ -77,7 +88,7 @@ class LaravelOutlook implements MailClient
             'email_id' => $mail->getId(),
             'thread_id' => $properties['conversationId'],
             'subject' => $mail->getSubject(),
-            'message' => $mail->getBody(),
+            'message' => $mail->getBody()?->getContent(),
             'to' => collect($properties['toRecipients'])->map(fn($recipient) => $recipient['emailAddress'])->toArray()
         ];
     }
@@ -150,7 +161,7 @@ class LaravelOutlook implements MailClient
             'email_id' => $mail->getId(),
             'thread_id' => $properties['conversationId'],
             'subject' => $mail->getSubject(),
-            'message' => $mail->getBody(),
+            'message' => $mail->getBody()?->getContent(),
             'to' => collect($properties['toRecipients'])->map(fn($recipient) => $recipient['emailAddress'])->toArray()
         ];
     }

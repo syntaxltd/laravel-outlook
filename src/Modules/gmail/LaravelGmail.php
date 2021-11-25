@@ -3,15 +3,13 @@
 
 namespace Syntax\LaravelMailIntegration\Modules\gmail;
 
-use App\Models\Contact;
 use App\Models\PartnerUser;
 use Exception;
 use Google\Service\Gmail\Message;
-use Google_Service_Gmail;
 use Google_Service_Gmail_Message;
-use Google_Service_Gmail_WatchRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Safe\Exceptions\UrlException;
 use Syntax\LaravelMailIntegration\Contracts\MailClient;
 use Syntax\LaravelMailIntegration\Models\Mail;
 use Syntax\LaravelMailIntegration\Modules\gmail\services\GmailConnection;
@@ -20,6 +18,11 @@ use Throwable;
 
 class LaravelGmail extends GmailConnection implements MailClient
 {
+    public function __construct(string $userId = null)
+    {
+        parent::__construct($userId);
+    }
+
     public function auth(): AuthClient
     {
         return new AuthClient();
@@ -112,14 +115,15 @@ class LaravelGmail extends GmailConnection implements MailClient
     }
 
     /**
-     * @throws Exception
+     * @throws UrlException|Exception
      */
-    public function checkReplies(Contact $contact, Collection $mails, string $token): Collection
+    public function checkReplies(Collection $mails, string $token): Collection
     {
+
         // Get unique thread ids
-        $unique = $mails->unique('thread_id')->pluck('thread_id')->toArray();
-        collect($unique)->each(function ($email) use ($token, $contact, $mails) {
-            $response = $this->service->users_threads->get('me', $email);
+        $unique = $mails->unique('thread_id')->toArray();
+        collect($unique)->each(function ($email) use ($token, $mails) {
+            $response = $this->service->users_threads->get('me', $email['thread_id']);
             $threads = $response->getMessages();
             foreach ($threads as $thread) {
                 $mail = new GmailMessages($thread);
@@ -127,25 +131,22 @@ class LaravelGmail extends GmailConnection implements MailClient
                     /** @var Mail $reply */
                     $reply = Mail::query()->create([
                         'history_id' => $mail->getHistoryId(),
-                        'parentable_id' => $contact->id,
-                        'parentable_type' => get_class($contact),
+                        'parentable_id' => $email['parentable_id'],
+                        'parentable_type' => $email['parentable_type'],
                         'thread_id' => $mail->threadId,
                         'token_id' => $token,
                         'email_id' => $mail->id,
                         'created_at' => $mail->internalDate,
                         'updated_at' => $mail->internalDate,
                         'data' => [
-                            'contact' => [[
-                                'id' => $contact->id,
-                                'name' => $contact->name,
-                                'email' => $contact->email,
-                            ]],
+                            'contact' => $email['data']['contact'],
                             'from' => $mail->getFrom(),
                             'to' => $mail->getTo(),
                             'subject' => $mail->subject,
                             'content' => $mail->getHtmlBody(),
                         ],
                     ]);
+                    $this->saveAssociations($reply, $email['associations']);
                     $reply->saveAttachments($mail->getAttachments());
                     $mails->add($reply);
                 }
@@ -155,45 +156,26 @@ class LaravelGmail extends GmailConnection implements MailClient
         return $mails;
     }
 
-
     /**
-     * users.stop receiving push notifications for the given user mailbox.
+     * Save note associations.
      *
-     * @param  string  $userEmail  Email address
-     * @param  array  $optParams
-     * @return Google_Service_Gmail
+     * @param Mail $mail
+     * @param array $associations
      */
-    public function stopWatch(string $userEmail, array $optParams = []): Google_Service_Gmail
+    public function saveAssociations(Mail $mail, array $associations): void
     {
-        $service = new Google_Service_Gmail($this);
-
-        return $service->users->stop($userEmail, $optParams);
+        $mail->contacts()->sync($this->convertToArray($associations['contacts']));
+        $mail->companies()->sync($this->convertToArray($associations['companies']));
+        $mail->properties()->sync($this->convertToArray($associations['properties']));
+        $mail->deals()->sync($this->convertToArray($associations['deals']));
     }
 
-    /**
-     * Set up or update a push notification watch on the given user mailbox.
-     *
-     * @return array
-     */
-    public function setWatch(): array
+    private function convertToArray(Collection $values): array
     {
-        $projectId = config('laravel-mail-integration.services.gmail.project_id');
-        $rq = new Google_Service_Gmail_WatchRequest();
-        $rq->setTopicName('projects/'.$projectId.'/topics/mykii');
-        $history = $this->service->users->watch('me', $rq);
-        $historyList = $this->service->users_history->listUsersHistory('me', [
-            'startHistoryId' => $history->historyId
-        ]);
-        $mails = [];
-        foreach ($historyList->history as $chunk) {
-            foreach ($chunk->messages as $msg) {
-                $mails[] = $msg;
-            }
-        }
-
-        return $mails;
+        return $values->filter()->map(function ($item) {
+            return $item['id'];
+        })->toArray();
     }
-
     public function delete(Mail $mail): Message
     {
        return $this->service->users_messages->trash('me', $mail->email_id);

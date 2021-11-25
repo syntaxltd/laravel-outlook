@@ -10,6 +10,7 @@ use Google_Service_Gmail_MessagePart;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Safe\Exceptions\UrlException;
 use Syntax\LaravelMailIntegration\Models\MailAccessToken;
 use Syntax\LaravelMailIntegration\Modules\gmail\traits\Replyable;
 use function Safe\base64_decode;
@@ -197,6 +198,7 @@ class GmailMessages extends GmailConnection
      *
      * @param string $content
      * @return string
+     * @throws UrlException
      */
     public function getDecodedBody(string $content): string
     {
