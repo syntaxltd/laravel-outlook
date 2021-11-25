@@ -8,7 +8,6 @@ use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Microsoft\Graph\Exception\GraphException;
@@ -18,7 +17,7 @@ use Microsoft\Graph\Model\ChatMessage;
 use Safe\Exceptions\FilesystemException;
 use Syntax\LaravelMailIntegration\Contracts\MailClient;
 use Syntax\LaravelMailIntegration\Models\Mail;
-use Syntax\LaravelMailIntegration\Modules\outlook\messages\Mail;
+use Syntax\LaravelMailIntegration\Modules\outlook\messages\Mail as Message;
 use Throwable;
 use function Safe\base64_decode;
 
@@ -28,28 +27,59 @@ class LaravelOutlook implements MailClient
      * @throws Throwable
      * @throws GraphException
      */
-    public function checkReplies(Contact $contact, Collection $mails, string $token): Collection
+    public function checkReplies(Contact $contact): void
     {
+//        $subscription = $this->getGraphClient()->createRequest('POST', '/subscriptions')->attachBody([
+//            "changeType" => "created,updated",
+//            "notificationUrl" => "https://xmwero5xzn.sharedwithexpose.com/api/validate",
+//            "resource" => "/me/messages",
+//            "expirationDateTime" => "2021-11-27T11:00:00.0000000Z",
+//            "clientState" => "SecretClientState"
+//        ])->setReturnType(Subscription::class)->execute();
+//        info('Subscription', [$subscription]);
+
         // Get unique thread ids
-        $unique = $mails->unique('thread_id')->pluck('thread_id')->toArray();
-        array_walk($unique, function (&$unique) {
-            $unique = "conversationId eq '$unique'";
-        });
-        $query = implode(' or ', $unique);
+//        $unique = $mails->unique('thread_id')->pluck('thread_id')->toArray();
+//        array_walk($unique, function (&$unique) {
+//            $unique = "conversationId eq '$unique'";
+//        });
+//        $query = implode(' or ', $unique);
+//
+//        $threads = $this->getGraphClient()->createRequest('GET', "/me/messages?\$filter=$query")
+//            ->setReturnType(ChatMessage::class)->execute();
+//
+//        collect($threads)->each(function (ChatMessage $chatMessage) use ($contact, &$mails, $token) {
+//            if (!$mails->contains('email_id', $chatMessage->getId())) {
+//                /** @var Mail $reply */
+//                $reply = $this->saveReply($chatMessage, $token, $contact);
+//                $reply->saveAttachments($this->getAttachments($chatMessage));
+//                $mails->add($reply);
+//            }
+//        });
+    }
 
-        $threads = $this->getGraphClient()->createRequest('GET', "/me/messages?\$filter=$query")
-            ->setReturnType(ChatMessage::class)->execute();
+    /**
+     * @throws Throwable
+     * @throws GraphException
+     * @throws GuzzleException
+     */
+    public function send(Request $request): array
+    {
+        $uuid = Str::uuid()->toString();
+        $this->getGraphClient()->createRequest('POST', '/me/sendMail')
+            ->attachBody($this->getMessage($request, $uuid)->getPayload())
+            ->execute();
 
-        collect($threads)->each(function (ChatMessage $chatMessage) use ($contact, &$mails, $token) {
-            if (!$mails->contains('email_id', $chatMessage->getId())) {
-                /** @var Mail $reply */
-                $reply = $this->saveReply($chatMessage, $token, $contact);
-                $reply->saveAttachments($this->getAttachments($chatMessage));
-                $mails->add($reply);
-            }
-        });
+        $mail = $this->getMessageByUuid($uuid);
+        $properties = $mail->getProperties();
 
-        return $mails;
+        return [
+            'email_id' => $mail->getId(),
+            'thread_id' => $properties['conversationId'],
+            'subject' => $mail->getSubject(),
+            'message' => $mail->getBody(),
+            'to' => collect($properties['toRecipients'])->map(fn($recipient) => $recipient['emailAddress'])->toArray()
+        ];
     }
 
     /**
@@ -68,6 +98,61 @@ class LaravelOutlook implements MailClient
     public function auth(): AuthClient
     {
         return new AuthClient;
+    }
+
+    /**
+     * @param Request $request
+     * @param string $uuid
+     * @return Message
+     * @throws FilesystemException
+     */
+    protected function getMessage(Request $request, string $uuid): Message
+    {
+        return (new Message)->setSubject($request->input('subject'))
+            ->setContentType('HTML')
+            ->setContent($request->input('content'))
+            ->setUuid($uuid)
+            ->setBcc($request->input('bcc'))
+            ->setCc($request->input('cc'))
+            ->setAttachments($request->input('attachments'))
+            ->setRecipients($request->input('contact'));
+    }
+
+    /**
+     * @throws GraphException
+     * @throws GuzzleException
+     * @throws Throwable
+     */
+    public function getMessageByUuid(string $uuid): ChatMessage
+    {
+        return $this->getGraphClient()
+            ->createRequest('GET', "/me/messages?\$select=*&\$filter=singleValueExtendedProperties/Any(ep:ep/id eq 'String {" . $uuid . "}
+             Name SendMailId' and ep/value eq '" . $uuid . "')&\$expand=singleValueExtendedProperties(\$filter=id eq 'String {" . $uuid . "} Name SendMailId')")
+            ->setReturnType(ChatMessage::class)
+            ->execute()[0];
+    }
+
+    /**
+     * @throws GraphException
+     * @throws Throwable
+     * @throws GuzzleException
+     */
+    public function reply(Request $request, string $id): array
+    {
+        $uuid = Str::uuid()->toString();
+        $this->getGraphClient()->createRequest('POST', "/me/messages/$id/reply")
+            ->attachBody($this->getMessage($request, $uuid)->getPayload())->execute();
+
+        $mail = $this->getMessageByUuid($uuid);
+        $properties = $mail->getProperties();
+
+        return [
+            'email_id' => $mail->getId(),
+            'thread_id' => $properties['conversationId'],
+            'subject' => $mail->getSubject(),
+            'message' => $mail->getBody(),
+            'to' => collect($properties['toRecipients'])->map(fn($recipient) => $recipient['emailAddress'])->toArray()
+        ];
     }
 
     protected function saveReply(ChatMessage $message, string $token, Contact $contact): Model|Builder
@@ -130,84 +215,5 @@ class LaravelOutlook implements MailClient
         }
 
         return $attachments;
-    }
-
-    /**
-     * @throws Throwable
-     * @throws GraphException
-     * @throws GuzzleException
-     */
-    public function send(Request $request): array
-    {
-        $uuid = Str::uuid()->toString();
-        $this->getGraphClient()->createRequest('POST', '/me/sendMail')
-            ->attachBody($this->getMessage($request, $uuid)->getPayload())
-            ->execute();
-
-        $mail = $this->getMessageByUuid($uuid);
-        $properties = $mail->getProperties();
-
-        return [
-            'email_id' => $mail->getId(),
-            'thread_id' => $properties['conversationId'],
-            'subject' => $mail->getSubject(),
-            'message' => $mail->getBody(),
-            'to' => collect($properties['toRecipients'])->map(fn($recipient) => $recipient['emailAddress'])->toArray()
-        ];
-    }
-
-    /**
-     * @param Request $request
-     * @param string $uuid
-     * @return Mail
-     * @throws FilesystemException
-     */
-    protected function getMessage(Request $request, string $uuid): Mail
-    {
-        return (new Mail)->setSubject($request->input('subject'))
-            ->setContentType('HTML')
-            ->setContent($request->input('content'))
-            ->setUuid($uuid)
-            ->setBcc($request->input('bcc'))
-            ->setCc($request->input('cc'))
-            ->setAttachments($request->input('attachments'))
-            ->setRecipients($request->input('contact'));
-    }
-
-    /**
-     * @throws GraphException
-     * @throws GuzzleException
-     * @throws Throwable
-     */
-    public function getMessageByUuid(string $uuid): ChatMessage
-    {
-        return $this->getGraphClient()
-            ->createRequest('GET', "/me/messages?\$select=*&\$filter=singleValueExtendedProperties/Any(ep:ep/id eq 'String {" . $uuid . "}
-             Name SendMailId' and ep/value eq '" . $uuid . "')&\$expand=singleValueExtendedProperties(\$filter=id eq 'String {" . $uuid . "} Name SendMailId')")
-            ->setReturnType(ChatMessage::class)
-            ->execute()[0];
-    }
-
-    /**
-     * @throws GraphException
-     * @throws Throwable
-     * @throws GuzzleException
-     */
-    public function reply(Request $request, string $id): array
-    {
-        $uuid = Str::uuid()->toString();
-        $this->getGraphClient()->createRequest('POST', "/me/messages/$id/reply")
-            ->attachBody($this->getMessage($request, $uuid)->getPayload())->execute();
-
-        $mail = $this->getMessageByUuid($uuid);
-        $properties = $mail->getProperties();
-
-        return [
-            'email_id' => $mail->getId(),
-            'thread_id' => $properties['conversationId'],
-            'subject' => $mail->getSubject(),
-            'message' => $mail->getBody(),
-            'to' => collect($properties['toRecipients'])->map(fn($recipient) => $recipient['emailAddress'])->toArray()
-        ];
     }
 }
