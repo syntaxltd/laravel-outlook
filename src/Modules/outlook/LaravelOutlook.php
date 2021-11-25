@@ -8,8 +8,6 @@ use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Microsoft\Graph\Exception\GraphException;
@@ -204,7 +202,8 @@ class LaravelOutlook implements MailClient
     {
         $attachments = [];
         if ($message->getProperties()['hasAttachments']) {
-            $files = $this->getGraphClient()->createRequest('GET', '/me/messages/' . $message->getId() . '/attachments')
+            $files = $this->getGraphClient()
+                ->createRequest('GET', '/me/messages/' . $message->getId() . '/attachments')
                 ->setReturnType(Attachment::class)->execute();
 
             collect($files)->each(function (Attachment $attachment) use (&$attachments) {
@@ -212,7 +211,8 @@ class LaravelOutlook implements MailClient
 
                 /** @var Partner $partner */
                 $partner = tenant();
-                Storage::disk('s3')->put("$partner->id/attachments/mails/" . $properties['name'], base64_decode($properties['contentBytes']));
+                Storage::disk('s3')
+                    ->put("$partner->id/attachments/mails/" . $properties['name'], base64_decode($properties['contentBytes']));
                 $path = Storage::disk('s3')->path("$partner->id/attachments/mails/" . $properties['name']);
 
                 $attachments[] = [
