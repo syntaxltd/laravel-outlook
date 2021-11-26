@@ -3,18 +3,23 @@
 
 namespace Syntax\LaravelMailIntegration\Modules\gmail;
 
+use App\Models\CentralMail;
 use App\Models\PartnerUser;
 use Exception;
 use Google\Service\Gmail\Message;
 use Google_Service_Gmail_Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Safe\Exceptions\JsonException;
 use Safe\Exceptions\UrlException;
 use Syntax\LaravelMailIntegration\Contracts\MailClient;
 use Syntax\LaravelMailIntegration\Models\Mail;
+use Syntax\LaravelMailIntegration\Models\MailAccessToken;
 use Syntax\LaravelMailIntegration\Modules\gmail\services\GmailConnection;
 use Syntax\LaravelMailIntegration\Modules\gmail\services\GmailMessages;
 use Throwable;
+use function Safe\base64_decode;
+use function Safe\json_decode;
 
 class LaravelGmail extends GmailConnection implements MailClient
 {
@@ -64,14 +69,6 @@ class LaravelGmail extends GmailConnection implements MailClient
         ];
     }
 
-    private function getContacts(Request $request): array
-    {
-        return collect($request->input('contact'))->filter()->map(function ($item) {
-            return $item['email'];
-        })->toArray();
-    }
-
-
     /**
      * @param string $id
      *
@@ -114,27 +111,36 @@ class LaravelGmail extends GmailConnection implements MailClient
         ];
     }
 
+    private function getContacts(Request $request): array
+    {
+        return collect($request->input('contact'))->filter()->map(function ($item) {
+            return $item['email'];
+        })->toArray();
+    }
+
     /**
      * @throws UrlException|Exception
      */
-    public function checkReplies(Collection $mails, string $token): Collection
+    public function checkReplies(Request $request, MailAccessToken $accessToken): Collection
     {
+        $mails = Mail::query()->where('token_id', $accessToken->id)->get();
 
         // Get unique thread ids
         $unique = $mails->unique('thread_id')->toArray();
-        collect($unique)->each(function ($email) use ($token, $mails) {
+        collect($unique)->each(function ($email) use ($accessToken, $mails) {
+            $email = $email->append('associations');
             $response = $this->service->users_threads->get('me', $email['thread_id']);
             $threads = $response->getMessages();
             foreach ($threads as $thread) {
                 $mail = new GmailMessages($thread);
-                if(!$mails->contains('history_id', $mail->getHistoryId()) && $mail->getHtmlBody()) {
+                if (!$mails->contains('history_id', $mail->getHistoryId()) && $mail->getHtmlBody()) {
                     /** @var Mail $reply */
                     $reply = Mail::query()->create([
                         'history_id' => $mail->getHistoryId(),
                         'parentable_id' => $email['parentable_id'],
                         'parentable_type' => $email['parentable_type'],
                         'thread_id' => $mail->threadId,
-                        'token_id' => $token,
+                        'token_id' => $accessToken->id,
                         'email_id' => $mail->id,
                         'created_at' => $mail->internalDate,
                         'updated_at' => $mail->internalDate,
@@ -176,8 +182,28 @@ class LaravelGmail extends GmailConnection implements MailClient
             return $item['id'];
         })->toArray();
     }
+
     public function delete(Mail $mail): Message
     {
-       return $this->service->users_messages->trash('me', $mail->email_id);
+        return $this->service->users_messages->trash('me', $mail->email_id);
+    }
+
+    /**
+     * @param Request $request
+     * @return Collection
+     * @throws JsonException
+     * @throws UrlException
+     */
+    public function getTenant(Request $request): Collection
+    {
+        $data = collect($request->input('message'))->filter(function ($value, $key) {
+            return $key === 'data';
+        })
+            ->map(function ($item) {
+                return $item;
+            })->toArray();
+        $contents = json_decode(base64_decode($data['data']), true);
+
+        return CentralMail::query()->where('email', $contents['emailAddress'])->get();
     }
 }

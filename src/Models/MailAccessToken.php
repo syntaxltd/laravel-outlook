@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $id
  * @property string $email
  * @property string $type
+ * @property string $partner_user_id
  */
 class MailAccessToken extends Model
 {

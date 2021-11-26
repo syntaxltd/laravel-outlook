@@ -2,9 +2,8 @@
 
 namespace Syntax\LaravelMailIntegration\Observers;
 
-use App\Models\CentralMail;
-use Illuminate\Support\Facades\Log;
 use Syntax\LaravelMailIntegration\Models\MailAccessToken;
+use Throwable;
 
 class MailAccessObserver
 {
@@ -13,24 +12,11 @@ class MailAccessObserver
      *
      * @param MailAccessToken $mailAccessToken
      * @return void
+     * @throws Throwable
      */
     public function created(MailAccessToken $mailAccessToken)
     {
-        CentralMail::query()->updateOrCreate([
-            'tenant_id' => tenant('id'),
-            'email' => $mailAccessToken->email
-        ]);
-    }
-
-    /**
-     * Handle the MailAccessToken "updated" event.
-     *
-     * @param MailAccessToken $mailAccessToken
-     * @return void
-     */
-    public function updated(MailAccessToken $mailAccessToken)
-    {
-        //
+//        CentralMail::query()->updateOrCreate(['tenant_id' => tenant('id'), 'email' => $this->getEmail($mailAccessToken)]);
     }
 
     /**
@@ -38,31 +24,24 @@ class MailAccessObserver
      *
      * @param MailAccessToken $mailAccessToken
      * @return void
+     * @throws Throwable
      */
     public function deleted(MailAccessToken $mailAccessToken)
     {
-        CentralMail::where('tenant_id', tenant('id'))->where('email', $mailAccessToken->email)->delete();
+//        CentralMail::query()->where(['tenant_id' => tenant('id'), 'email' => $this->getEmail($mailAccessToken)])->delete();
     }
 
     /**
-     * Handle the MailAccessToken "restored" event.
-     *
-     * @param MailAccessToken $mailAccessToken
-     * @return void
+     * @throws Throwable
      */
-    public function restored(MailAccessToken $mailAccessToken)
+    private function getEmail(MailAccessToken $token): string
     {
-        //
-    }
-
-    /**
-     * Handle the MailAccessToken "force deleted" event.
-     *
-     * @param MailAccessToken $mailAccessToken
-     * @return void
-     */
-    public function forceDeleted(MailAccessToken $mailAccessToken)
-    {
-        //
+        $email = $token->email;
+//        if ($token->type == 'outlook') {
+//            $service = LaravelMailIntegration::service('outlook', $token->partner_user_id);
+//            $email = $service->auth()->user($service->getGraphClient())->getId();
+//        }
+//
+        return $email;
     }
 }

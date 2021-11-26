@@ -13,10 +13,11 @@ class LaravelMailIntegration
 {
     /**
      * @param string $client
+     * @param int|string|null $userId
      * @return mixed
      * @throws Throwable
      */
-    public static function service(string $client, string $userId = null): mixed
+    public static function service(string $client, mixed $userId): mixed
     {
         throw_if(!in_array($client, config('laravel-mail-integration.default')), new InvalidClientException);
 
@@ -32,5 +33,4 @@ class LaravelMailIntegration
     {
         return MailAccessToken::Where('partner_user_id', Auth::id())->get();
     }
-
 }

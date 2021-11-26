@@ -2,12 +2,13 @@
 
 namespace Syntax\LaravelMailIntegration\Modules\outlook;
 
+use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Provider\GenericProvider;
 use League\OAuth2\Client\Token\AccessToken;
+use Microsoft\Graph\Exception\GraphException;
 use Microsoft\Graph\Graph;
 use Microsoft\Graph\Model\User;
 use Syntax\LaravelMailIntegration\Contracts\MailClientAuth;
@@ -17,6 +18,13 @@ use Throwable;
 
 class AuthClient implements MailClientAuth
 {
+    private string $userId;
+
+    public function __construct(string $userId)
+    {
+        $this->userId = $userId;
+    }
+
     public function getAuthorizationUrl(): string
     {
         $client = $this->getOAuthClient();
@@ -109,7 +117,7 @@ class AuthClient implements MailClientAuth
     public function getToken(): string
     {
         /** @var MailAccessToken|null $accessToken */
-        $accessToken = MailAccessToken::query()->where('partner_user_id', auth('partneruser')->id())->first();
+        $accessToken = MailAccessToken::query()->where('partner_user_id', $this->userId)->first();
 
         // Check if tokens exist
         if (is_null($accessToken)) {
@@ -136,5 +144,17 @@ class AuthClient implements MailClientAuth
 
         // Token is still valid, just return it
         return $accessToken->access_token;
+    }
+
+    /**
+     * @param Graph $graph
+     * @return User
+     * @throws GraphException
+     * @throws GuzzleException
+     */
+    public function user(Graph $graph): User
+    {
+        return $graph->createRequest('GET', '/me?$select=displayName,mail,mailboxSettings,userPrincipalName')
+            ->setReturnType(User::class)->execute();
     }
 }

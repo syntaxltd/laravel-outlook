@@ -27,11 +27,12 @@ use Illuminate\Support\Collection;
  * @property int $parentable_id
  * @property string $parentable_type
  * @property Collection|array $threads
+ * @property Contact $parentable
  * */
 class Mail extends Model
 {
     use HasAttachment;
-    
+
     /**
      * @var string[]
      */
@@ -119,6 +120,6 @@ class Mail extends Model
      */
     public function provider(): BelongsTo
     {
-        return $this->belongsTo(MailAccessToken::class,'token_id');
+        return $this->belongsTo(MailAccessToken::class, 'token_id');
     }
 }
