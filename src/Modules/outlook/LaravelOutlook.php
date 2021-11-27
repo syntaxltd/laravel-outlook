@@ -75,8 +75,8 @@ class LaravelOutlook implements MailClient
     public function subscribe(): Subscription
     {
         $subscription = $this->getGraphClient()->createRequest('POST', '/subscriptions')->attachBody([
-            "changeType" => "created,updated",
-            "notificationUrl" => "https://ph0asezkh6.sharedwithexpose.com/partner/oauth/notifications/outlook",
+            "changeType" => "updated",
+            "notificationUrl" => "https://oopioha1yi.sharedwithexpose.com/partner/oauth/notifications/outlook",
             "resource" => "/me/messages",
             "expirationDateTime" => "2021-11-27T11:00:00.0000000Z",
             "clientState" => "SecretClientState",
@@ -93,6 +93,8 @@ class LaravelOutlook implements MailClient
     public function checkReplies(Request $request, MailAccessToken $token): void
     {
         collect($request->input('value'))->each(function ($change) use ($token) {
+            info('Notification received', $change);
+
             $emailId = $change['resourceData']['id'];
             /** @var Mail|null $existingMessage */
             $existingMessage = Mail::query()->firstWhere('email_id', $emailId);
@@ -149,6 +151,7 @@ class LaravelOutlook implements MailClient
                 'from' => $from ? $from['emailAddress'] : [],
                 'content' => $properties['body']['content'],
                 'subject' => $properties['subject'],
+                'bodyPreview' => $properties['bodyPreview'],
                 'to' => collect($properties['toRecipients'])->map(fn($recipient) => $recipient['emailAddress'])->toArray()
             ],
         ]);
