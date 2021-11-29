@@ -42,10 +42,8 @@ class LaravelOutlook implements MailClient
      */
     public function unsubscribe(string $id): void
     {
-        $subscription = $this->getGraphClient()
-            ->createRequest('GET', "/subscriptions/$id")
+        $this->getGraphClient()->createRequest('DELETE', "/subscriptions/$id")
             ->execute();
-        info('Subscription', [$subscription]);
     }
 
     /**
@@ -67,6 +65,19 @@ class LaravelOutlook implements MailClient
     }
 
     /**
+     * @throws GraphException
+     * @throws GuzzleException
+     * @throws Throwable
+     */
+    public function subscriptions(): Subscription
+    {
+        return $this->getGraphClient()
+            ->createRequest('GET', "/subscriptions")
+            ->setReturnType(Subscription::class)
+            ->execute();
+    }
+
+    /**
      * @return Subscription
      * @throws GraphException
      * @throws GuzzleException
@@ -74,16 +85,13 @@ class LaravelOutlook implements MailClient
      */
     public function subscribe(): Subscription
     {
-        $subscription = $this->getGraphClient()->createRequest('POST', '/subscriptions')->attachBody([
+        return $this->getGraphClient()->createRequest('POST', '/subscriptions')->attachBody([
             "changeType" => "updated",
-            "notificationUrl" => "https://oopioha1yi.sharedwithexpose.com/partner/oauth/notifications/outlook",
+            "notificationUrl" => "https://7nnzqs0tud.sharedwithexpose.com/partner/oauth/notifications/outlook",
             "resource" => "/me/messages",
-            "expirationDateTime" => "2021-11-27T11:00:00.0000000Z",
+            "expirationDateTime" => "2021-12-01T11:00:00.0000000Z",
             "clientState" => "SecretClientState",
         ])->setReturnType(Subscription::class)->execute();
-        info('Subscription', [$subscription]);
-
-        return $subscription;
     }
 
     /**
@@ -93,8 +101,6 @@ class LaravelOutlook implements MailClient
     public function checkReplies(Request $request, MailAccessToken $token): void
     {
         collect($request->input('value'))->each(function ($change) use ($token) {
-            info('Notification received', $change);
-
             $emailId = $change['resourceData']['id'];
             /** @var Mail|null $existingMessage */
             $existingMessage = Mail::query()->firstWhere('email_id', $emailId);
