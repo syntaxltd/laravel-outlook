@@ -46,7 +46,7 @@ class LaravelGmail extends GmailConnection implements MailClient
         $user = auth('partneruser')->user();
 
         $mail = new GmailMessages();
-        $mail->to(['eva.mwangi@synt.ax']);
+        $mail->to($this->getContacts($request));
         $mail->from($user->email, $user->name);
         $mail->cc($request->input('cc'));
         $mail->bcc($request->input('bcc'));
