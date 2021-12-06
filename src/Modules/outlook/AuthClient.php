@@ -5,7 +5,6 @@ namespace Syntax\LaravelMailIntegration\Modules\outlook;
 use App\Models\CentralMail;
 use Carbon\Carbon;
 use GuzzleHttp\Exception\GuzzleException;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Provider\GenericProvider;
@@ -110,7 +109,7 @@ class AuthClient implements MailClientAuth
             ->execute();
     }
 
-    private function saveToken(AccessToken $accessToken, User $user): MailAccessToken|Model
+    private function saveToken(AccessToken $accessToken, User $user): MailAccessToken
     {
         /**
          * @var MailAccessToken $token
@@ -159,7 +158,7 @@ class AuthClient implements MailClientAuth
     /**
      * @throws Throwable
      */
-    public function getToken(): string
+    public function getToken(): ?string
     {
         /**
          * @var MailAccessToken|null $accessToken
@@ -178,6 +177,9 @@ class AuthClient implements MailClientAuth
             // Token is expired (or very close to it)
             // so let's refresh
             try {
+                /**
+                 * @var AccessToken $newToken
+                 */
                 $newToken = $this->getOAuthClient()->getAccessToken('refresh_token', [
                     'refresh_token' => $accessToken->refresh_token,
                 ]);
