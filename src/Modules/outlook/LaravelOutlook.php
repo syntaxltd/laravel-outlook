@@ -2,9 +2,11 @@
 
 namespace Syntax\LaravelMailIntegration\Modules\outlook;
 
+use App\Events\MailReply;
 use App\Models\CentralMail;
 use App\Models\Contact;
 use App\Models\Partner;
+use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -46,120 +48,9 @@ class LaravelOutlook implements MailClient
              */
             $existingMessage = Mail::query()->firstWhere('email_id', $emailId);
             if (is_null($existingMessage)) {
-                $message = $this->getMail($emailId);
-                $properties = $message->getProperties();
-
-                $thread = Mail::query()->firstWhere('thread_id', $properties['conversationId']);
-                if (!is_null($thread)) {
-                    /**
-                     * @var Mail $reply
-                     */
-                    $reply = $this->saveReply($message, $token->id, $thread->parentable);
-                    if ($properties['hasAttachments']) {
-                        $reply->saveAttachments($this->getAttachments($emailId));
-                    }
-                }
+                event(new MailReply($emailId, $token));
             }
         });
-    }
-
-    /**
-     * @param string $id
-     * @return ChatMessage
-     * @throws GraphException
-     * @throws GuzzleException
-     * @throws Throwable
-     */
-    private function getMail(string $id): ChatMessage
-    {
-        return $this->getGraphClient()
-            ->createRequest('GET', "/me/messages/$id")
-            ->setReturnType(ChatMessage::class)
-            ->execute();
-    }
-
-    /**
-     * @throws Throwable
-     */
-    public function getGraphClient(): Graph
-    {
-        return (new Graph)->setAccessToken($this->auth()->getToken());
-    }
-
-    /**
-     * Init auth class
-     *
-     * @return AuthClient
-     */
-    public function auth(): AuthClient
-    {
-        return new AuthClient($this->id);
-    }
-
-    protected function saveReply(ChatMessage $message, int $token, Contact $contact): Model|Builder
-    {
-        $properties = $message->getProperties();
-        $from = $message->getFrom()?->getProperties();
-
-        return Mail::query()->create([
-            'email_id' => $message->getId(),
-            'parentable_id' => $contact->id,
-            'parentable_type' => get_class($contact),
-            'thread_id' => $properties['conversationId'],
-            'token_id' => $token,
-            'created_at' => $properties['createdDateTime'],
-            'updated_at' => $properties['lastModifiedDateTime'],
-            'data' => [
-                'contact' => [[
-                    'id' => $contact->id,
-                    'name' => $contact->name,
-                    'email' => $contact->email,
-                ],
-                ],
-                'from' => $from ? $from['emailAddress'] : [],
-                'content' => $properties['body']['content'],
-                'subject' => $properties['subject'],
-                'bodyPreview' => $properties['bodyPreview'],
-                'to' => collect($properties['toRecipients'])->map(fn($recipient) => $recipient['emailAddress'])->toArray()
-            ],
-        ]);
-    }
-
-    /**
-     * @param string $message
-     * @return array
-     * @throws GraphException
-     * @throws GuzzleException
-     * @throws Throwable
-     */
-    protected function getAttachments(string $message): array
-    {
-        $files = $this->getGraphClient()
-            ->createRequest('GET', "/me/messages/$message/attachments")
-            ->setReturnType(Attachment::class)->execute();
-
-        $attachments = [];
-        collect($files)->each(function (Attachment $attachment) use (&$attachments) {
-            $properties = $attachment->getProperties();
-
-            /**
-             * @var Partner $partner
-             */
-            $partner = tenant();
-            Storage::disk('s3')
-                ->put("$partner->id/attachments/mails/" . $properties['name'], base64_decode($properties['contentBytes']));
-            $path = Storage::disk('s3')->path("$partner->id/attachments/mails/" . $properties['name']);
-
-            $attachments[] = [
-                'encoding' => $properties['contentType'],
-                'size' => $properties['size'],
-                'name' => $properties['name'],
-                'path' => $path,
-                'file_url' => Storage::disk('s3')->url($path),
-            ];
-        });
-
-        return $attachments;
     }
 
     /**
@@ -184,6 +75,24 @@ class LaravelOutlook implements MailClient
             'message' => $mail->getBody()?->getContent(),
             'to' => collect($properties['toRecipients'])->map(fn($recipient) => $recipient['emailAddress'])->toArray()
         ];
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function getGraphClient(): Graph
+    {
+        return (new Graph)->setAccessToken($this->auth()->getToken());
+    }
+
+    /**
+     * Init auth class
+     *
+     * @return AuthClient
+     */
+    public function auth(): AuthClient
+    {
+        return new AuthClient($this->id);
     }
 
     /**
@@ -250,5 +159,95 @@ class LaravelOutlook implements MailClient
         $id = explode('/', $request->input('value.0.resource'))[1];
 
         return CentralMail::query()->where('email', $id)->get();
+    }
+
+    public function saveReply(ChatMessage $message, int $token, Contact $contact): Model|Builder
+    {
+        $properties = $message->getProperties();
+        $from = $message->getFrom()?->getProperties();
+
+        return Mail::query()->create([
+            'email_id' => $message->getId(),
+            'parentable_id' => $contact->id,
+            'parentable_type' => get_class($contact),
+            'thread_id' => $properties['conversationId'],
+            'token_id' => $token,
+            'created_at' => $properties['createdDateTime'],
+            'updated_at' => $properties['lastModifiedDateTime'],
+            'data' => [
+                'contact' => [[
+                    'id' => $contact->id,
+                    'name' => $contact->name,
+                    'email' => $contact->email,
+                ],
+                ],
+                'from' => $from ? $from['emailAddress'] : [],
+                'content' => $properties['body']['content'],
+                'subject' => $properties['subject'],
+                'bodyPreview' => $properties['bodyPreview'],
+                'to' => collect($properties['toRecipients'])->map(fn($recipient) => $recipient['emailAddress'])->toArray()
+            ],
+        ]);
+    }
+
+    /**
+     * @param string $message
+     * @return array
+     * @throws GraphException
+     * @throws GuzzleException
+     * @throws Throwable
+     */
+    public function getAttachments(string $message): array
+    {
+        $files = $this->getGraphClient()
+            ->createRequest('GET', "/me/messages/$message/attachments")
+            ->setReturnType(Attachment::class)->execute();
+
+        $attachments = [];
+        collect($files)->each(function (Attachment $attachment) use (&$attachments) {
+            $properties = $attachment->getProperties();
+
+            /**
+             * @var Partner $partner
+             */
+            $partner = tenant();
+            Storage::disk('s3')
+                ->put("$partner->id/attachments/mails/" . $properties['name'], base64_decode($properties['contentBytes']));
+            $path = Storage::disk('s3')->path("$partner->id/attachments/mails/" . $properties['name']);
+
+            $attachments[] = [
+                'encoding' => $properties['contentType'],
+                'size' => $properties['size'],
+                'name' => $properties['name'],
+                'path' => $path,
+                'file_url' => Storage::disk('s3')->url($path),
+            ];
+        });
+
+        return $attachments;
+    }
+
+    /**
+     * @param string $id
+     * @return ChatMessage
+     * @throws GraphException
+     * @throws GuzzleException
+     * @throws Throwable
+     */
+    public function getMail(string $id): ?ChatMessage
+    {
+        try {
+            return $this->getGraphClient()
+                ->createRequest('GET', "/me/messages/$id")
+                ->setReturnType(ChatMessage::class)
+                ->execute();
+        } catch (ClientException $exception) {
+            if ($exception->getCode() == 404) {
+                return null;
+            }
+
+            report($exception);
+            return null;
+        }
     }
 }
