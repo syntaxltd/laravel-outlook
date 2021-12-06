@@ -2,6 +2,7 @@
 
 namespace Syntax\LaravelMailIntegration\Modules\outlook;
 
+use App\Models\CentralMail;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -88,12 +89,17 @@ class AuthClient implements MailClientAuth
                 ->setReturnType(User::class)
                 ->execute();
 
-            $this->saveToken($accessToken, $user->getMail() ?? $user->getUserPrincipalName());
+            $this->saveToken($accessToken, $user);
         }
     }
 
-    private function saveToken(AccessToken $accessToken, string $email): MailAccessToken|Model
+    private function saveToken(AccessToken $accessToken, User $user): MailAccessToken|Model
     {
+        CentralMail::query()->create([
+            'tenant_id' => tenant()->id,
+            'email' => $user->getId(),
+        ]);
+
         return MailAccessToken::query()->updateOrCreate([
             'type' => 'gmail',
             'partner_user_id' => auth('partneruser')->id(),
@@ -102,7 +108,7 @@ class AuthClient implements MailClientAuth
             'refresh_token' => $accessToken->getRefreshToken(),
             'expires_at' => $accessToken->getExpires(),
             'type' => 'outlook',
-            'email' => $email,
+            'email' => $user->getMail() ?? $user->getUserPrincipalName(),
         ]);
     }
 
@@ -116,7 +122,9 @@ class AuthClient implements MailClientAuth
      */
     public function getToken(): string
     {
-        /** @var MailAccessToken|null $accessToken */
+        /**
+         * @var MailAccessToken|null $accessToken
+         */
         $accessToken = MailAccessToken::query()->where('partner_user_id', $this->userId)->first();
 
         // Check if tokens exist
