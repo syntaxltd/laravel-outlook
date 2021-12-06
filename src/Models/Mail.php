@@ -8,6 +8,7 @@ use App\Models\Contact;
 use App\Models\Deal;
 use App\Models\Property;
 use App\Traits\HasAttachment;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -28,6 +29,7 @@ use Illuminate\Support\Collection;
  * @property string $parentable_type
  * @property Collection|array $threads
  * @property Contact $parentable
+ * @property Carbon $created_at
  * */
 class Mail extends Model
 {
@@ -43,7 +45,7 @@ class Mail extends Model
     ];
 
     protected $casts = [
-        'data' => 'array'
+        'data' => 'array',
     ];
 
     /**

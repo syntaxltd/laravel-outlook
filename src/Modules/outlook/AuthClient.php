@@ -3,6 +3,7 @@
 namespace Syntax\LaravelMailIntegration\Modules\outlook;
 
 use App\Models\CentralMail;
+use Carbon\Carbon;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -11,6 +12,7 @@ use League\OAuth2\Client\Provider\GenericProvider;
 use League\OAuth2\Client\Token\AccessToken;
 use Microsoft\Graph\Exception\GraphException;
 use Microsoft\Graph\Graph;
+use Microsoft\Graph\Model\Subscription;
 use Microsoft\Graph\Model\User;
 use Syntax\LaravelMailIntegration\Contracts\MailClientAuth;
 use Syntax\LaravelMailIntegration\Exceptions\InvalidStateException;
@@ -83,22 +85,35 @@ class AuthClient implements MailClientAuth
                 'code' => $authCode,
             ]);
 
-            $graph = new Graph();
-            $graph->setAccessToken($accessToken->getToken());
-            $user = $graph->createRequest('GET', '/me?$select=userPrincipalName')
-                ->setReturnType(User::class)
-                ->execute();
+            // Get graph User
+            $user = $this->user($accessToken->getToken());
 
+            // Save the token
             $this->saveToken($accessToken, $user);
+            
+            $this->subscribe();
         }
+    }
+
+    /**
+     * @param string $token
+     * @return User
+     * @throws GraphException
+     * @throws GuzzleException
+     */
+    public function user(string $token): User
+    {
+        $graph = new Graph();
+        return $graph->setAccessToken($token)
+            ->createRequest('GET', '/me?$select=displayName,mail,mailboxSettings,userPrincipalName')
+            ->setReturnType(User::class)
+            ->execute();
     }
 
     private function saveToken(AccessToken $accessToken, User $user): MailAccessToken|Model
     {
-        CentralMail::query()->create([
-            'tenant_id' => tenant()->id,
-            'email' => $user->getId(),
-        ]);
+        // Save central mail user and subscribe to notifications.
+        CentralMail::query()->create(['tenant_id' => tenant()->id, 'email' => $user->getId()]);
 
         return MailAccessToken::query()->updateOrCreate([
             'type' => 'gmail',
@@ -112,9 +127,29 @@ class AuthClient implements MailClientAuth
         ]);
     }
 
-    public function clearTokens(): void
+    /**
+     * @return Subscription
+     * @throws GraphException
+     * @throws GuzzleException
+     * @throws Throwable
+     */
+    public function subscribe(): Subscription
     {
-        MailAccessToken::query()->where('partner_user_id', auth('partneruser')->id())->delete();
+        return $this->getGraphClient()->createRequest('POST', '/subscriptions')->attachBody([
+            "changeType" => "updated",
+            "notificationUrl" => "https://oefjogn0ib.sharedwithexpose.com/partner/oauth/notifications/outlook",
+            "resource" => "/me/messages",
+            "expirationDateTime" => Carbon::now()->addDays(2),
+            "clientState" => "SecretClientState",
+        ])->setReturnType(Subscription::class)->execute();
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function getGraphClient(): Graph
+    {
+        return (new Graph)->setAccessToken($this->getToken());
     }
 
     /**
@@ -154,15 +189,36 @@ class AuthClient implements MailClientAuth
         return $accessToken->access_token;
     }
 
+    public function clearTokens(): void
+    {
+        MailAccessToken::query()->where('partner_user_id', auth('partneruser')->id())->delete();
+    }
+
     /**
-     * @param Graph $graph
-     * @return User
      * @throws GraphException
      * @throws GuzzleException
+     * @throws Throwable
      */
-    public function user(Graph $graph): User
+    public function subscriptions(): array
     {
-        return $graph->createRequest('GET', '/me?$select=displayName,mail,mailboxSettings,userPrincipalName')
-            ->setReturnType(User::class)->execute();
+        $subscriptions = $this->getGraphClient()
+            ->createRequest('GET', "/subscriptions")
+            ->setReturnType(Subscription::class)
+            ->execute();
+        info('Subscriptions', $subscriptions);
+
+        return $subscriptions;
+    }
+
+    /**
+     * @param string $id
+     * @throws GraphException
+     * @throws GuzzleException
+     * @throws Throwable
+     */
+    public function unsubscribe(string $id): void
+    {
+        $this->getGraphClient()->createRequest('DELETE', "/subscriptions/$id")
+            ->execute();
     }
 }

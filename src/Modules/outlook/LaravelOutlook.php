@@ -16,7 +16,6 @@ use Microsoft\Graph\Exception\GraphException;
 use Microsoft\Graph\Graph;
 use Microsoft\Graph\Model\Attachment;
 use Microsoft\Graph\Model\ChatMessage;
-use Microsoft\Graph\Model\Subscription;
 use Safe\Exceptions\FilesystemException;
 use Syntax\LaravelMailIntegration\Contracts\MailClient;
 use Syntax\LaravelMailIntegration\Models\Mail;
@@ -35,66 +34,6 @@ class LaravelOutlook implements MailClient
     }
 
     /**
-     * @param string $id
-     * @throws GraphException
-     * @throws GuzzleException
-     * @throws Throwable
-     */
-    public function unsubscribe(string $id): void
-    {
-        $this->getGraphClient()->createRequest('DELETE', "/subscriptions/$id")
-            ->execute();
-    }
-
-    /**
-     * @throws Throwable
-     */
-    public function getGraphClient(): Graph
-    {
-        return (new Graph)->setAccessToken($this->auth()->getToken());
-    }
-
-    /**
-     * Init auth class
-     *
-     * @return AuthClient
-     */
-    public function auth(): AuthClient
-    {
-        return new AuthClient($this->id);
-    }
-
-    /**
-     * @throws GraphException
-     * @throws GuzzleException
-     * @throws Throwable
-     */
-    public function subscriptions(): Subscription
-    {
-        return $this->getGraphClient()
-            ->createRequest('GET', "/subscriptions")
-            ->setReturnType(Subscription::class)
-            ->execute();
-    }
-
-    /**
-     * @return Subscription
-     * @throws GraphException
-     * @throws GuzzleException
-     * @throws Throwable
-     */
-    public function subscribe(): Subscription
-    {
-        return $this->getGraphClient()->createRequest('POST', '/subscriptions')->attachBody([
-            "changeType" => "updated",
-            "notificationUrl" => "https://7nnzqs0tud.sharedwithexpose.com/partner/oauth/notifications/outlook",
-            "resource" => "/me/messages",
-            "expirationDateTime" => "2021-12-01T11:00:00.0000000Z",
-            "clientState" => "SecretClientState",
-        ])->setReturnType(Subscription::class)->execute();
-    }
-
-    /**
      * @throws Throwable
      * @throws GraphException
      */
@@ -102,7 +41,9 @@ class LaravelOutlook implements MailClient
     {
         collect($request->input('value'))->each(function ($change) use ($token) {
             $emailId = $change['resourceData']['id'];
-            /** @var Mail|null $existingMessage */
+            /**
+             * @var Mail|null $existingMessage
+             */
             $existingMessage = Mail::query()->firstWhere('email_id', $emailId);
             if (is_null($existingMessage)) {
                 $message = $this->getMail($emailId);
@@ -110,7 +51,9 @@ class LaravelOutlook implements MailClient
 
                 $thread = Mail::query()->firstWhere('thread_id', $properties['conversationId']);
                 if (!is_null($thread)) {
-                    /** @var Mail $reply */
+                    /**
+                     * @var Mail $reply
+                     */
                     $reply = $this->saveReply($message, $token->id, $thread->parentable);
                     if ($properties['hasAttachments']) {
                         $reply->saveAttachments($this->getAttachments($emailId));
@@ -135,6 +78,24 @@ class LaravelOutlook implements MailClient
             ->execute();
     }
 
+    /**
+     * @throws Throwable
+     */
+    public function getGraphClient(): Graph
+    {
+        return (new Graph)->setAccessToken($this->auth()->getToken());
+    }
+
+    /**
+     * Init auth class
+     *
+     * @return AuthClient
+     */
+    public function auth(): AuthClient
+    {
+        return new AuthClient($this->id);
+    }
+
     protected function saveReply(ChatMessage $message, int $token, Contact $contact): Model|Builder
     {
         $properties = $message->getProperties();
@@ -153,7 +114,8 @@ class LaravelOutlook implements MailClient
                     'id' => $contact->id,
                     'name' => $contact->name,
                     'email' => $contact->email,
-                ]],
+                ],
+                ],
                 'from' => $from ? $from['emailAddress'] : [],
                 'content' => $properties['body']['content'],
                 'subject' => $properties['subject'],
@@ -180,7 +142,9 @@ class LaravelOutlook implements MailClient
         collect($files)->each(function (Attachment $attachment) use (&$attachments) {
             $properties = $attachment->getProperties();
 
-            /** @var Partner $partner */
+            /**
+             * @var Partner $partner
+             */
             $partner = tenant();
             Storage::disk('s3')
                 ->put("$partner->id/attachments/mails/" . $properties['name'], base64_decode($properties['contentBytes']));
