@@ -90,7 +90,7 @@ class AuthClient implements MailClientAuth
 
             // Save the token
             $this->saveToken($accessToken, $user);
-            
+
             $this->subscribe();
         }
     }
@@ -112,19 +112,23 @@ class AuthClient implements MailClientAuth
 
     private function saveToken(AccessToken $accessToken, User $user): MailAccessToken|Model
     {
-        // Save central mail user and subscribe to notifications.
-        CentralMail::query()->create(['tenant_id' => tenant()->id, 'email' => $user->getId()]);
-
-        return MailAccessToken::query()->updateOrCreate([
-            'type' => 'gmail',
-            'partner_user_id' => auth('partneruser')->id(),
+        /**
+         * @var MailAccessToken $token
+         */
+        $token = MailAccessToken::query()->updateOrCreate([
+            'type' => 'outlook',
+            'partner_user_id' => $this->userId,
         ], [
             'access_token' => $accessToken->getToken(),
             'refresh_token' => $accessToken->getRefreshToken(),
             'expires_at' => $accessToken->getExpires(),
-            'type' => 'outlook',
             'email' => $user->getMail() ?? $user->getUserPrincipalName(),
         ]);
+
+        // Save central mail user and subscribe to notifications.
+        CentralMail::query()->updateOrCreate(['tenant_id' => tenant()->id, 'email' => $user->getId()]);
+
+        return $token;
     }
 
     /**
@@ -137,7 +141,7 @@ class AuthClient implements MailClientAuth
     {
         return $this->getGraphClient()->createRequest('POST', '/subscriptions')->attachBody([
             "changeType" => "updated",
-            "notificationUrl" => "https://oefjogn0ib.sharedwithexpose.com/partner/oauth/notifications/outlook",
+            "notificationUrl" => "https://s3seafwawc.sharedwithexpose.com/partner/oauth/notifications/outlook",
             "resource" => "/me/messages",
             "expirationDateTime" => Carbon::now()->addDays(2),
             "clientState" => "SecretClientState",
@@ -179,7 +183,7 @@ class AuthClient implements MailClientAuth
                 ]);
 
                 // Store the new values
-                return $this->saveToken($newToken, $accessToken->email)->access_token;
+                return $this->saveToken($newToken, $this->user($newToken))->access_token;
             } catch (IdentityProviderException $e) {
                 return '';
             }
