@@ -6,7 +6,6 @@ namespace Syntax\LaravelMailIntegration\Modules\gmail;
 use App\Models\CentralMail;
 use App\Models\PartnerUser;
 use Exception;
-use Google\Service\Gmail\Message;
 use Google_Service_Gmail_Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -42,7 +41,9 @@ class LaravelGmail extends GmailConnection implements MailClient
      */
     public function send(Request $request): array
     {
-        /** @var PartnerUser $user */
+        /**
+         * @var PartnerUser $user
+         */
         $user = auth('partneruser')->user();
 
         $mail = new GmailMessages();
@@ -67,6 +68,13 @@ class LaravelGmail extends GmailConnection implements MailClient
             'to' => $mail->getTo(),
             'message' => $mail->message,
         ];
+    }
+
+    private function getContacts(Request $request): array
+    {
+        return collect($request->input('contact'))->filter()->map(function ($item) {
+            return $item['email'];
+        })->toArray();
     }
 
     /**
@@ -111,13 +119,6 @@ class LaravelGmail extends GmailConnection implements MailClient
         ];
     }
 
-    private function getContacts(Request $request): array
-    {
-        return collect($request->input('contact'))->filter()->map(function ($item) {
-            return $item['email'];
-        })->toArray();
-    }
-
     /**
      * @throws UrlException|Exception
      */
@@ -134,7 +135,9 @@ class LaravelGmail extends GmailConnection implements MailClient
             foreach ($threads as $thread) {
                 $mail = new GmailMessages($thread);
                 if (!$mails->contains('history_id', $mail->getHistoryId()) && $mail->getHtmlBody()) {
-                    /** @var Mail $reply */
+                    /**
+                     * @var Mail $reply
+                     */
                     $reply = Mail::query()->create([
                         'history_id' => $mail->getHistoryId(),
                         'parentable_id' => $email['parentable_id'],
@@ -181,11 +184,6 @@ class LaravelGmail extends GmailConnection implements MailClient
         return $values->filter()->map(function ($item) {
             return $item['id'];
         })->toArray();
-    }
-
-    public function delete(Mail $mail): Message
-    {
-        return $this->service->users_messages->trash('me', $mail->email_id);
     }
 
     /**
