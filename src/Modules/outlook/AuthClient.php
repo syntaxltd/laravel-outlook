@@ -139,11 +139,11 @@ class AuthClient implements MailClientAuth
     public function subscribe(): Subscription
     {
         return $this->getGraphClient()->createRequest('POST', '/subscriptions')->attachBody([
-            "changeType" => "created",
-            "notificationUrl" => "https://h0jifsyr6x.sharedwithexpose.com/partner/oauth/notifications/outlook",
-            "resource" => "/me/messages",
-            "expirationDateTime" => Carbon::now()->addDays(2),
-            "clientState" => "SecretClientState",
+            'changeType' => 'created',
+            'notificationUrl' => 'https://ddhgkvzhps.sharedwithexpose.com/partner/oauth/notifications/outlook',
+            'resource' => "/me/messages",
+            'expirationDateTime' => Carbon::now()->addDays(2),
+            'clientState' => 'SecretClientState',
         ])->setReturnType(Subscription::class)->execute();
     }
 

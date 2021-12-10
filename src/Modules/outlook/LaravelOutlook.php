@@ -18,6 +18,7 @@ use Microsoft\Graph\Exception\GraphException;
 use Microsoft\Graph\Graph;
 use Microsoft\Graph\Model\Attachment;
 use Microsoft\Graph\Model\ChatMessage;
+use Microsoft\Graph\Model\Folder;
 use Safe\Exceptions\FilesystemException;
 use Syntax\LaravelMailIntegration\Contracts\MailClient;
 use Syntax\LaravelMailIntegration\Models\Mail;
@@ -249,5 +250,21 @@ class LaravelOutlook implements MailClient
             report($exception);
             return null;
         }
+    }
+
+    /**
+     * Get all user mail folders.
+     *
+     * @return Collection
+     * @throws GraphException
+     * @throws GuzzleException
+     * @throws Throwable
+     */
+    public function getUserMailFolders(): Collection
+    {
+        return collect($this->getGraphClient()
+            ->createCollectionRequest('GET', '/me/mailFolders')
+            ->setReturnType(Folder::class)
+            ->execute());
     }
 }
