@@ -140,7 +140,7 @@ class AuthClient implements MailClientAuth
     {
         return $this->getGraphClient()->createRequest('POST', '/subscriptions')->attachBody([
             'changeType' => 'created',
-            'notificationUrl' => 'https://ddhgkvzhps.sharedwithexpose.com/partner/oauth/notifications/outlook',
+            'notificationUrl' => config('app.url') . '/partner/oauth/notifications/outlook',
             'resource' => "/me/messages",
             'expirationDateTime' => Carbon::now()->addDays(2),
             'clientState' => 'SecretClientState',
@@ -214,14 +214,16 @@ class AuthClient implements MailClientAuth
     }
 
     /**
-     * @param string $id
+     * @param string|null $id
      * @throws GraphException
      * @throws GuzzleException
      * @throws Throwable
      */
-    public function unsubscribe(string $id): void
+    public function unsubscribe(?string $id): void
     {
-        $this->getGraphClient()->createRequest('DELETE', "/subscriptions/$id")
-            ->execute();
+        if (!is_null($id)) {
+            $this->getGraphClient()->createRequest('DELETE', "/subscriptions/$id")
+                ->execute();
+        }
     }
 }
