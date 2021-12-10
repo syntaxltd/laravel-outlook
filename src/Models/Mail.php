@@ -30,6 +30,7 @@ use Illuminate\Support\Collection;
  * @property Collection|array $threads
  * @property Contact $parentable
  * @property Carbon $created_at
+ * @property int $id
  * */
 class Mail extends Model
 {
