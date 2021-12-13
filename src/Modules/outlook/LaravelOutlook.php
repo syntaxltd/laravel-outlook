@@ -68,13 +68,15 @@ class LaravelOutlook implements MailClient
 
         $mail = $this->getMessageByUuid($uuid);
         $properties = $mail->getProperties();
+        $from = $mail->getFrom()?->getProperties();
 
         return [
             'email_id' => $mail->getId(),
             'thread_id' => $properties['conversationId'],
             'subject' => $mail->getSubject(),
             'message' => $mail->getBody()?->getContent(),
-            'to' => collect($properties['toRecipients'])->map(fn($recipient) => $recipient['emailAddress'])->toArray()
+            'to' => collect($properties['toRecipients'])->map(fn($recipient) => $recipient['emailAddress'])->toArray(),
+            'from' => $from ? $from['emailAddress'] : [],
         ];
     }
 
@@ -141,12 +143,15 @@ class LaravelOutlook implements MailClient
 
         $mail = $this->getMessageByUuid($uuid);
         $properties = $mail->getProperties();
+        $from = $mail->getFrom()?->getProperties();
 
         return [
             'email_id' => $mail->getId(),
             'thread_id' => $properties['conversationId'],
             'subject' => $mail->getSubject(),
             'message' => $mail->getBody()?->getContent(),
+            'bodyPreview' => $properties['bodyPreview'],
+            'from' => $from ? $from['emailAddress'] : [],
             'to' => collect($properties['toRecipients'])->map(fn($recipient) => $recipient['emailAddress'])->toArray()
         ];
     }
@@ -180,8 +185,7 @@ class LaravelOutlook implements MailClient
                     'id' => $contact->id,
                     'name' => $contact->name,
                     'email' => $contact->email,
-                ],
-                ],
+                ]],
                 'from' => $from ? $from['emailAddress'] : [],
                 'content' => $properties['body']['content'],
                 'subject' => $properties['subject'],

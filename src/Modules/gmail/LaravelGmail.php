@@ -64,7 +64,10 @@ class LaravelGmail extends GmailConnection implements MailClient
             'thread_id' => $mail->getThreadId(),
             'history_id' => $this->get($mail->getId())->getHistoryId(),
             'subject' => $mail->subject,
-            'from' => $mail->getFrom(),
+            'from' => [
+                'name' => $user->name,
+                'address' => $mail->getFrom()['name'],
+            ],
             'to' => $mail->getTo(),
             'message' => $mail->message,
         ];
