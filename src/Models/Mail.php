@@ -42,7 +42,7 @@ class Mail extends Model
     public array $associables = ['properties', 'contacts', 'companies', 'deals'];
 
     protected $fillable = [
-        'parentable_id', 'parentable_type', 'email_id', 'thread_id', 'history_id', 'token_id', 'data', 'created_at', 'updated_at',
+        'parentable_id', 'parentable_type', 'email_id', 'thread_id', 'history_id', 'token_id', 'data', 'created_at', 'updated_at', 'content',
     ];
 
     protected $casts = [

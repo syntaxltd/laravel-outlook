@@ -150,8 +150,8 @@ class LaravelGmail extends GmailConnection implements MailClient
                         'email_id' => $mail->id,
                         'created_at' => $mail->internalDate,
                         'updated_at' => $mail->internalDate,
+                        'content' => $email['data']['contact'],
                         'data' => [
-                            'contact' => $email['data']['contact'],
                             'from' => $mail->getFrom(),
                             'to' => $mail->getTo(),
                             'subject' => $mail->subject,

@@ -22,6 +22,7 @@ class CreateMailsTable extends Migration
             $table->unsignedBigInteger('parentable_id');
             $table->string('parentable_type');
             $table->json('data')->nullable();
+            $table->text('content')->nullable();
             $table->timestamps();
         });
     }

@@ -180,6 +180,7 @@ class LaravelOutlook implements MailClient
             'token_id' => $token,
             'created_at' => $properties['createdDateTime'],
             'updated_at' => $properties['lastModifiedDateTime'],
+            'content' => $properties['body']['content'],
             'data' => [
                 'contact' => [[
                     'id' => $contact->id,
@@ -187,7 +188,6 @@ class LaravelOutlook implements MailClient
                     'email' => $contact->email,
                 ]],
                 'from' => $from ? $from['emailAddress'] : [],
-                'content' => $properties['body']['content'],
                 'subject' => $properties['subject'],
                 'bodyPreview' => $properties['bodyPreview'],
                 'to' => collect($properties['toRecipients'])->map(fn($recipient) => $recipient['emailAddress'])->toArray()
