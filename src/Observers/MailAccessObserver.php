@@ -29,7 +29,7 @@ class MailAccessObserver
         $email = $token->email;
         if ($token->type == 'outlook') {
             $service = LaravelMailIntegration::service('outlook', $token->partner_user_id);
-            $email = $service->auth()->user($service->getGraphClient())->getId();
+            $email = $service->auth()->user($token->access_token)->getId();
         }
 
         return $email;
