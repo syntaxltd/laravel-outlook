@@ -167,8 +167,18 @@ class LaravelOutlook implements MailClient
         return CentralMail::query()->where('email', $id)->get();
     }
 
-    public function saveReply(ChatMessage $message, int $token, Contact $contact): Model|Builder
+    /**
+     * @param ChatMessage $message
+     * @param int $token
+     * @param Contact|null $contact
+     * @return Model|Builder|null
+     */
+    public function saveReply(ChatMessage $message, int $token, ?Contact $contact): Model|Builder|null
     {
+        if (is_null($contact)) {
+            return null;
+        }
+
         $properties = $message->getProperties();
         $from = $message->getFrom()?->getProperties();
 
