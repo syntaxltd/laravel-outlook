@@ -23,6 +23,7 @@ class CreateMailsTable extends Migration
             $table->string('parentable_type');
             $table->json('data')->nullable();
             $table->text('content')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }

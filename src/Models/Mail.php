@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
@@ -35,6 +36,7 @@ use Illuminate\Support\Collection;
 class Mail extends Model
 {
     use HasAttachment;
+    use SoftDeletes;
 
     /**
      * @var string[]
