@@ -160,77 +160,45 @@ class LaravelGmail extends GmailConnection implements MailClient
     {
         $mails = Mail::query()->where('token_id', $accessToken->id)->get();
         $data = $this->decodeMessageBody($request);
-        if(count($mails) > 0) {
-            $historyResponse = $this->listHistory($mails->last()->history_id);
-        }else{
-            $historyResponse = $this->listHistory($data['history_id']);
-        }
-
+        $historyResponse = $this->listHistory($mails->last()->history_id ?: $data['historyId']);
         if ($historyResponse->getHistory()) {
             foreach ($historyResponse->getHistory() as $messages) {
                 foreach ($messages->getMessages() as $message){
-                    $mail = new GmailMessages($this->get($message->id));
+                    $mail = new GmailMessages($message);
                     if(!$mails->contains('email_id', $message->id) && $mail->getHtmlBody()) {
                         if ($mails->contains('thread_id', $message->threadId)) {
                             /**
                              * @var Mail $threadMail
                              */
                             $threadMail = $mails->where('thread_id', $message->threadId)->first();
-                            $email = $threadMail->append('associations');
-
-                            /**
-                             * @var Mail $reply
-                             */
-                            $reply = Mail::query()->create([
-                                'history_id' => $mail->getHistoryId(),
-                                'parentable_id' => $email['parentable_id'],
-                                'parentable_type' => $email['parentable_type'],
-                                'thread_id' => $mail->threadId,
-                                'token_id' => $accessToken->id,
-                                'email_id' => $mail->id,
-                                'created_at' => $mail->internalDate,
-                                'updated_at' => $mail->internalDate,
-                                'content' => $mail->getHtmlBody(),
-                                'data' => [
-                                    'from' => $mail->getFrom(),
-                                    'to' => $mail->getTo(),
-                                    'subject' => $mail->subject,
-                                    'content' => $mail->getHtmlBody(),
-                                ],
-                            ]);
-
-                            $this->saveAssociations($reply, $email['associations']);
-                            $reply->saveAttachments($mail->getAttachments());
-                            $mails->add($reply);
+                            $contact = $threadMail->parentable;
                         } else {
-                            $existingContact = Contact::where('email', 'LIKE', $mail->from)->first();
-                            if($existingContact){
-                                /**
-                                 * @var Mail $reply
-                                 */
-                                $reply = Mail::query()->create([
-                                    'history_id' => $mail->getHistoryId(),
-                                    'parentable_id' => $existingContact->id,
-                                    'parentable_type' => 'App\Models\Contact',
-                                    'thread_id' => $mail->threadId,
-                                    'token_id' => $accessToken->id,
-                                    'email_id' => $mail->id,
-                                    'created_at' => $mail->internalDate,
-                                    'updated_at' => $mail->internalDate,
-                                    'content' => $mail->getHtmlBody(),
-                                    'data' => [
-                                        'from' => $mail->getFrom(),
-                                        'to' => $mail->getTo(),
-                                        'subject' => $mail->subject,
-                                        'content' => $mail->getHtmlBody(),
-                                    ],
-                                ]);
-
-                                $reply->contacts()->sync([$existingContact->id]);
-                                $reply->saveAttachments($mail->getAttachments());
-                                $mails->add($reply);
-                            }
+                            $contact = Contact::where('email', 'LIKE', $mail->from)->first();
                         }
+
+                        /**
+                         * @var Mail $reply
+                         */
+                        $reply = Mail::query()->create([
+                            'history_id' => $mail->getHistoryId(),
+                            'parentable_id' => $contact->id,
+                            'parentable_type' => get_class($contact),
+                            'thread_id' => $mail->threadId,
+                            'token_id' => $accessToken->id,
+                            'email_id' => $mail->id,
+                            'created_at' => $mail->internalDate,
+                            'updated_at' => $mail->internalDate,
+                            'content' => $mail->getHtmlBody(),
+                            'data' => [
+                                'from' => $mail->getFrom(),
+                                'to' => $mail->getTo(),
+                                'subject' => $mail->subject,
+                                'content' => $mail->getHtmlBody(),
+                            ],
+                        ]);
+                        $reply->saveAttachments($mail->getAttachments());
+                        $mails->add($reply);
+
                     }
                 }
             }
