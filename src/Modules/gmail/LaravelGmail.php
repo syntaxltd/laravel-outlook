@@ -11,6 +11,7 @@ use Google\Service\Gmail\ListHistoryResponse;
 use Google_Service_Gmail_Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Safe\Exceptions\JsonException;
 use Safe\Exceptions\UrlException;
 use Syntax\LaravelMailIntegration\Contracts\MailClient;
