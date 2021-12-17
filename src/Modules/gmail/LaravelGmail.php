@@ -9,6 +9,8 @@ use App\Models\PartnerUser;
 use Exception;
 use Google\Service\Gmail\ListHistoryResponse;
 use Google_Service_Gmail_Message;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -86,19 +88,24 @@ class LaravelGmail extends GmailConnection implements MailClient
     /**
      * @param string $id
      *
-     * @return Google_Service_Gmail_Message
-     * @throws \Google\Exception
+     * @return Google_Service_Gmail_Message|null
      */
-    public function get(string $id): Google_Service_Gmail_Message
+    public function get(string $id): ?Google_Service_Gmail_Message
     {
-        $responseOrRequest = $this->service->users_messages->get('me', $id);
+        try {
+            $responseOrRequest = $this->service->users_messages->get('me', $id);
 
-        if (get_class($responseOrRequest) === "GuzzleHttp\Psr7\Request") {
-            return $this->service->getClient()->execute($responseOrRequest,
-                'Google_Service_Gmail_Message');
+            if (get_class($responseOrRequest) === "GuzzleHttp\Psr7\Request") {
+                return $this->service->getClient()->execute($responseOrRequest,
+                    'Google_Service_Gmail_Message');
+            }
+
+            return $responseOrRequest;
+        } catch (\Google\Service\Exception $exception) {
+//            report($exception);
+            return  null;
         }
 
-        return $responseOrRequest;
     }
 
     /**
@@ -111,7 +118,8 @@ class LaravelGmail extends GmailConnection implements MailClient
     {
         $responseOrRequest = $this->service->users_history->listUsersHistory('me', [
             'startHistoryId' => $id,
-            'labelId' => ['UNREAD', 'INBOX']
+            'labelId' => ['UNREAD', 'INBOX'],
+            'historyTypes' => 'messageAdded'
         ]);
         if (get_class($responseOrRequest) === "GuzzleHttp\Psr7\Request") {
             return $this->service->getClient()->execute($responseOrRequest,
@@ -130,6 +138,11 @@ class LaravelGmail extends GmailConnection implements MailClient
      */
     public function reply(Request $request): array
     {
+        /**
+         * @var PartnerUser $user
+         */
+        $user = auth('partneruser')->user();
+
         $mail = new GmailMessages($this->get($request->input('email_id')));
         $mail->to($this->getContacts($request));
         $mail->cc($request->input('cc'));
@@ -147,7 +160,10 @@ class LaravelGmail extends GmailConnection implements MailClient
             'thread_id' => $mail->threadId,
             'history_id' => $this->get($mail->id)->getHistoryId(),
             'subject' => $mail->subject,
-            'from' => $mail->getFrom(),
+            'from' => [
+                'name' => $user->name,
+                'address' => $mail->getFrom()['name'],
+            ],
             'to' => $mail->getTo(),
             'message' => $mail->message,
         ];
@@ -156,50 +172,45 @@ class LaravelGmail extends GmailConnection implements MailClient
     /**
      * @throws UrlException|Exception
      */
-    public function checkReplies(Request $request, MailAccessToken $accessToken): Collection
+    public function checkReplies(Request $request, MailAccessToken $accessToken): Collection|bool
     {
+        Log::info('lets go');
         $mails = Mail::query()->where('token_id', $accessToken->id)->get();
         $data = $this->decodeMessageBody($request);
         $historyResponse = $this->listHistory($mails->last()->history_id ?: $data['historyId']);
         if ($historyResponse->getHistory()) {
             foreach ($historyResponse->getHistory() as $messages) {
                 foreach ($messages->getMessages() as $message){
-                    $mail = new GmailMessages($message);
-                    if(!$mails->contains('email_id', $message->id) && $mail->getHtmlBody()) {
-                        if ($mails->contains('thread_id', $message->threadId)) {
-                            /**
-                             * @var Mail $threadMail
-                             */
-                            $threadMail = $mails->where('thread_id', $message->threadId)->first();
-                            $contact = $threadMail->parentable;
-                        } else {
-                            $contact = Contact::where('email', 'LIKE', $mail->from)->first();
+                        $singleEmail = $this->get($message->id);
+
+                        /** @var GmailMessages|null $mail */
+                        $mail = $singleEmail ? new GmailMessages($singleEmail) : null;
+                        if ((!$mails->contains('email_id', $message->id) || !$mails->contains('history_id', $message->historyId)) && (!is_null($mail) && !is_null($mail->getHtmlBody()))) {
+                            $contact = Contact::query()->where('email', $mail->from)->first();
+                            if ($mails->contains('thread_id', $message->threadId)) {
+                                /**
+                                 * @var Mail|null $thread
+                                 */
+                                $thread = Mail::withTrashed()->firstWhere('thread_id', $message->threadId);
+                                if (!is_null($thread)) {
+                                    if(!is_null($thread->deleted_at)) {
+                                        $thread->restore();
+                                    }
+                                    $contact = $thread->parentable;
+                                }
+
+                            }
+
+                            if (!is_null($contact)) {
+                                /**
+                                 * @var Mail $reply
+                                 */
+                                $reply = $this->saveMessage($mail, $contact, $accessToken);
+                                $reply->saveAttachments($mail->getAttachments());
+                                $mails->add($reply);
+                            }
                         }
 
-                        /**
-                         * @var Mail $reply
-                         */
-                        $reply = Mail::query()->create([
-                            'history_id' => $mail->getHistoryId(),
-                            'parentable_id' => $contact->id,
-                            'parentable_type' => get_class($contact),
-                            'thread_id' => $mail->threadId,
-                            'token_id' => $accessToken->id,
-                            'email_id' => $mail->id,
-                            'created_at' => $mail->internalDate,
-                            'updated_at' => $mail->internalDate,
-                            'content' => $mail->getHtmlBody(),
-                            'data' => [
-                                'from' => $mail->getFrom(),
-                                'to' => $mail->getTo(),
-                                'subject' => $mail->subject,
-                                'content' => $mail->getHtmlBody(),
-                            ],
-                        ]);
-                        $reply->saveAttachments($mail->getAttachments());
-                        $mails->add($reply);
-
-                    }
                 }
             }
         }
@@ -207,6 +218,29 @@ class LaravelGmail extends GmailConnection implements MailClient
         return $mails;
     }
 
+    private function saveMessage (GmailMessages $mail, Contact $contact, MailAccessToken $accessToken): Model|Builder
+    {
+        return Mail::query()->create([
+            'history_id' => $mail->getHistoryId(),
+            'parentable_id' => $contact->id,
+            'parentable_type' => get_class($contact),
+            'thread_id' => $mail->threadId,
+            'token_id' => $accessToken->id,
+            'email_id' => $mail->id,
+            'created_at' => $mail->internalDate,
+            'updated_at' => $mail->internalDate,
+            'content' => $mail->getHtmlBody(),
+            'data' => [
+                'from' => [
+                    'name' => $contact->name,
+                    'address' => $mail->getFrom()['name'],
+                ],
+                'to' => $mail->getTo(),
+                'subject' => $mail->subject,
+                'content' => $mail->getHtmlBody(),
+            ],
+        ]);
+    }
     /**
      * Save note associations.
      *

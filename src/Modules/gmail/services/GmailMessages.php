@@ -9,6 +9,7 @@ use Google_Service_Gmail_Message;
 use Google_Service_Gmail_MessagePart;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Safe\Exceptions\UrlException;
 use Syntax\LaravelMailIntegration\Models\MailAccessToken;
@@ -206,6 +207,27 @@ class GmailMessages extends GmailConnection
 
         return base64_decode($content);
     }
+    /**
+     * Returns a specific body part from an email
+     *
+     * @param string $type
+     *
+     * @return null|string
+     * @throws Exception
+     */
+    private function getBody(string $type = 'text/plain'): ?string
+    {
+        foreach ($this->parts as $part) {
+            $body = $part->filter(function ($value, $key) {
+                return $key === 'data';
+            })->map(function ($item) {
+                return $item;
+            })->toArray();
+            return$body['data'];
+        };
+
+        return null;
+    }
 
     /**
      * Gets the HTML body
@@ -216,22 +238,14 @@ class GmailMessages extends GmailConnection
      */
     public function getHtmlBody(): string|null
     {
-        $content =  null;
-        foreach ($this->parts as $part) {
-            $body = $part->filter(function ($value, $key) {
-                return $key === 'data';
-            })->map(function ($item) {
-                return $item;
-            })->toArray();
-            $content = $body['data'];
-        };
+        $content = $this->getBody();
         return $content ? $this->getDecodedBody($content) : null;
     }
     /**
      * Returns a collection of attachment
      *
      * @return array
-     * @throws \Exception
+     * @throws Exception
      */
     public function getAttachments(): array
     {
