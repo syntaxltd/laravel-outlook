@@ -50,7 +50,7 @@ class LaravelGmail extends GmailConnection implements MailClient
         $user = auth('partneruser')->user();
 
         $mail = new GmailMessages();
-        $mail->to($this->getContacts($request));
+        $mail->to(['eva.mwangi@synt.ax']);
         $mail->from($user->email, $user->name);
         $mail->cc($request->input('cc'));
         $mail->bcc($request->input('bcc'));
@@ -182,7 +182,7 @@ class LaravelGmail extends GmailConnection implements MailClient
 
                         /** @var GmailMessages|null $mail */
                         $mail = $singleEmail ? new GmailMessages($singleEmail) : null;
-                        if ((!$mails->contains('email_id', $message->id) || !$mails->contains('history_id', $message->historyId)) && (!is_null($mail) && !is_null($mail->getHtmlBody()))) {
+                        if (!is_null($mail) && !is_null($mail->getHtmlBody())) {
                             $contact = Contact::query()->where('email', $mail->from)->first();
                             if ($mails->contains('thread_id', $message->threadId)) {
                                 /**
@@ -199,12 +199,15 @@ class LaravelGmail extends GmailConnection implements MailClient
                             }
 
                             if (!is_null($contact)) {
-                                /**
-                                 * @var Mail $reply
-                                 */
-                                $reply = $this->saveMessage($mail, $contact, $accessToken);
-                                $reply->saveAttachments($mail->getAttachments());
-                                $mails->add($reply);
+                                $trashedMail = Mail::withTrashed()->firstWhere('email_id', $mail->id);
+                                if(is_null($trashedMail)) {
+                                    /**
+                                     * @var Mail $reply
+                                     */
+                                    $reply = $this->saveMessage($mail, $contact, $accessToken);
+                                    $reply->saveAttachments($mail->getAttachments());
+                                    $mails->add($reply);
+                                }
                             }
                         }
 
