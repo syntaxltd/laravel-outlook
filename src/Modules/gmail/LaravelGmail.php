@@ -9,11 +9,9 @@ use App\Models\PartnerUser;
 use Exception;
 use Google\Service\Gmail\ListHistoryResponse;
 use Google_Service_Gmail_Message;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
 use Safe\Exceptions\JsonException;
 use Safe\Exceptions\UrlException;
 use Syntax\LaravelMailIntegration\Contracts\MailClient;
@@ -63,11 +61,11 @@ class LaravelGmail extends GmailConnection implements MailClient
             $mail->attach($request->input('attachments'));
         }
         $mail->send();
-
+        $mailData =  $this->get($mail->getId());
         return [
             'email_id' => $mail->getId(),
             'thread_id' => $mail->getThreadId(),
-            'history_id' => $this->get($mail->getId())->getHistoryId(),
+            'history_id' => $mailData ? $mailData->getHistoryId() : null,
             'subject' => $mail->subject,
             'from' => [
                 'name' => $user->name,
@@ -89,6 +87,7 @@ class LaravelGmail extends GmailConnection implements MailClient
      * @param string $id
      *
      * @return Google_Service_Gmail_Message|null
+     * @throws \Google\Exception
      */
     public function get(string $id): ?Google_Service_Gmail_Message
     {
@@ -101,8 +100,7 @@ class LaravelGmail extends GmailConnection implements MailClient
             }
 
             return $responseOrRequest;
-        } catch (\Google\Service\Exception $exception) {
-//            report($exception);
+        } catch (\Google\Service\Exception) {
             return  null;
         }
 
@@ -154,11 +152,11 @@ class LaravelGmail extends GmailConnection implements MailClient
             $mail->attach($request->input('attachments'));
         }
         $mail->reply();
-
+        $mailData = $this->get($mail->id);
         return [
             'email_id' => $mail->id,
             'thread_id' => $mail->threadId,
-            'history_id' => $this->get($mail->id)->getHistoryId(),
+            'history_id' => $mailData ? $mailData->getHistoryId() : null,
             'subject' => $mail->subject,
             'from' => [
                 'name' => $user->name,
@@ -174,10 +172,9 @@ class LaravelGmail extends GmailConnection implements MailClient
      */
     public function checkReplies(Request $request, MailAccessToken $accessToken): Collection|bool
     {
-        Log::info('lets go');
         $mails = Mail::query()->where('token_id', $accessToken->id)->get();
         $data = $this->decodeMessageBody($request);
-        $historyResponse = $this->listHistory($mails->last()->history_id ?: $data['historyId']);
+        $historyResponse = $this->listHistory(!is_null($mails->last()) ? $mails->last()->history_id : $data['historyId']);
         if ($historyResponse->getHistory()) {
             foreach ($historyResponse->getHistory() as $messages) {
                 foreach ($messages->getMessages() as $message){
@@ -218,7 +215,10 @@ class LaravelGmail extends GmailConnection implements MailClient
         return $mails;
     }
 
-    private function saveMessage (GmailMessages $mail, Contact $contact, MailAccessToken $accessToken): Model|Builder
+    /**
+     * @throws Exception
+     */
+    private function saveMessage (GmailMessages $mail, Contact $contact, MailAccessToken $accessToken): Model
     {
         return Mail::query()->create([
             'history_id' => $mail->getHistoryId(),
