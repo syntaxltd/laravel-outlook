@@ -205,12 +205,30 @@ class AuthClient implements MailClientAuth
      * @throws GuzzleException
      * @throws Throwable
      */
-    public function subscriptions(): array
+    public function updateSubscription(?string $id): ?Subscription
     {
-        return $this->getGraphClient()
+        $this->getGraphClient()
+            ->createRequest('PATCH', "/subscriptions/$id")
+            ->attachBody(['expirationDateTime' => Carbon::now()->addDays(2)])
+            ->setReturnType(Subscription::class)
+            ->execute();
+
+        return $this->subscriptions();
+    }
+
+    /**
+     * @throws GraphException
+     * @throws GuzzleException
+     * @throws Throwable
+     */
+    public function subscriptions(): ?Subscription
+    {
+        $subscription = $this->getGraphClient()
             ->createRequest('GET', "/subscriptions")
             ->setReturnType(Subscription::class)
             ->execute();
+
+        return count($subscription) > 0 ? $subscription[0] : null;
     }
 
     /**

@@ -44,10 +44,11 @@ class LaravelOutlook implements MailClient
     {
         collect($request->input('value'))->each(function ($change) use ($token) {
             $emailId = $change['resourceData']['id'];
+
             /**
              * @var Mail|null $existingMessage
              */
-            $existingMessage = Mail::query()->firstWhere('email_id', $emailId);
+            $existingMessage = Mail::query()->where('email_id', $emailId)->first();
             if (is_null($existingMessage)) {
                 event(new MailReply($emailId, $token));
             }
@@ -66,18 +67,7 @@ class LaravelOutlook implements MailClient
             ->attachBody($this->getMessage($request, $uuid)->getPayload())
             ->execute();
 
-        $mail = $this->getMessageByUuid($uuid);
-        $properties = $mail->getProperties();
-        $from = $mail->getFrom()?->getProperties();
-
-        return [
-            'email_id' => $mail->getId(),
-            'thread_id' => $properties['conversationId'],
-            'subject' => $mail->getSubject(),
-            'message' => $mail->getBody()?->getContent(),
-            'to' => collect($properties['toRecipients'])->map(fn($recipient) => $recipient['emailAddress'])->toArray(),
-            'from' => $from ? $from['emailAddress'] : [],
-        ];
+        return [];
     }
 
     /**
@@ -100,16 +90,14 @@ class LaravelOutlook implements MailClient
 
     /**
      * @param Request $request
-     * @param string $uuid
      * @return Message
      * @throws FilesystemException
      */
-    protected function getMessage(Request $request, string $uuid): Message
+    protected function getMessage(Request $request): Message
     {
         return (new Message)->setSubject($request->input('subject'))
             ->setContentType('HTML')
             ->setContent($request->input('content'))
-            ->setUuid($uuid)
             ->setBcc($request->input('bcc'))
             ->setCc($request->input('cc'))
             ->setAttachments($request->input('attachments'))
@@ -118,42 +106,30 @@ class LaravelOutlook implements MailClient
 
     /**
      * @throws GraphException
-     * @throws GuzzleException
      * @throws Throwable
+     * @throws GuzzleException
      */
-    public function getMessageByUuid(string $uuid): ChatMessage
+    public function reply(Request $request, string $id): void
     {
-        return $this->getGraphClient()
-            ->createRequest('GET', "/me/messages?\$select=*&\$filter=singleValueExtendedProperties/Any(ep:ep/id eq 'String {" . $uuid . "}
-             Name SendMailId' and ep/value eq '" . $uuid . "')&\$expand=singleValueExtendedProperties(\$filter=id eq 'String {" . $uuid . "} Name SendMailId')")
-            ->setReturnType(ChatMessage::class)
-            ->execute()[0];
+        $this->getGraphClient()->createRequest('POST', "/me/messages/$id/reply")
+            ->attachBody($this->getMessage($request)->getPayload())
+            ->execute();
     }
 
     /**
      * @throws GraphException
-     * @throws Throwable
      * @throws GuzzleException
+     * @throws Throwable
      */
-    public function reply(Request $request, string $id): array
+    public function getMessageByUuid(string $uuid): ?ChatMessage
     {
-        $uuid = Str::uuid()->toString();
-        $this->getGraphClient()->createRequest('POST', "/me/messages/$id/reply")
-            ->attachBody($this->getMessage($request, $uuid)->getPayload())->execute();
+        $message = $this->getGraphClient()
+            ->createRequest('GET', "/me/messages?\$select=*&\$filter=singleValueExtendedProperties/Any(ep:ep/id eq 'String {" . $uuid . "}
+             Name SendMailId' and ep/value eq '" . $uuid . "')&\$expand=singleValueExtendedProperties(\$filter=id eq 'String {" . $uuid . "} Name SendMailId')")
+            ->setReturnType(ChatMessage::class)
+            ->execute();
 
-        $mail = $this->getMessageByUuid($uuid);
-        $properties = $mail->getProperties();
-        $from = $mail->getFrom()?->getProperties();
-
-        return [
-            'email_id' => $mail->getId(),
-            'thread_id' => $properties['conversationId'],
-            'subject' => $mail->getSubject(),
-            'message' => $mail->getBody()?->getContent(),
-            'bodyPreview' => $properties['bodyPreview'],
-            'from' => $from ? $from['emailAddress'] : [],
-            'to' => collect($properties['toRecipients'])->map(fn($recipient) => $recipient['emailAddress'])->toArray()
-        ];
+        return count($message) > 0 ? $message[0] : null;
     }
 
     /**
@@ -196,7 +172,8 @@ class LaravelOutlook implements MailClient
                     'id' => $contact->id,
                     'name' => $contact->name,
                     'email' => $contact->email,
-                ]],
+                ],
+                ],
                 'from' => $from ? $from['emailAddress'] : [],
                 'subject' => $properties['subject'],
                 'bodyPreview' => $properties['bodyPreview'],

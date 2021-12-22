@@ -16,7 +16,7 @@ class CreateMailsTable extends Migration
         Schema::create('mails', function (Blueprint $table) {
             $table->id();
             $table->foreignId('token_id')->nullable()->constrained('mail_access_tokens')->nullOnDelete();
-            $table->string('email_id');
+            $table->string('email_id')->unique();
             $table->string('thread_id');
             $table->string('history_id');
             $table->unsignedBigInteger('parentable_id');

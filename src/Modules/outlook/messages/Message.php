@@ -23,8 +23,6 @@ class Message
 
     private string $contentType = 'Text';
 
-    private string $uuid;
-
     private string $comment;
 
     /**
@@ -63,7 +61,7 @@ class Message
                 'emailAddress' => [
                     'name' => $recipient['name'],
                     'address' => $recipient['email'],
-                ]
+                ],
             ];
         })->toArray();
 
@@ -100,7 +98,7 @@ class Message
                 'emailAddress' => [
                     'name' => $recipient['name'],
                     'address' => $recipient['email'],
-                ]
+                ],
             ];
         })->toArray();
 
@@ -148,17 +146,6 @@ class Message
     }
 
     /**
-     * @param string $uuid
-     * @return Message
-     */
-    public function setUuid(string $uuid): self
-    {
-        $this->uuid = $uuid;
-
-        return $this;
-    }
-
-    /**
      * @param string $comment
      * @return Message
      */
@@ -180,12 +167,6 @@ class Message
                 'ccRecipients' => $this->cc,
                 'bccRecipients' => $this->bcc,
                 'attachments' => $this->attachments,
-                'singleValueExtendedProperties' => [
-                    [
-                        'id' => 'String {' . $this->uuid . '} Name SendMailId',
-                        'value' => $this->uuid,
-                    ]
-                ]
             ],
         ];
 

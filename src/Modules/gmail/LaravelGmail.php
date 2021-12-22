@@ -11,7 +11,9 @@ use Google\Service\Gmail\ListHistoryResponse;
 use Google_Service_Gmail_Message;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Safe\Exceptions\JsonException;
 use Safe\Exceptions\UrlException;
 use Syntax\LaravelMailIntegration\Contracts\MailClient;
@@ -39,10 +41,10 @@ class LaravelGmail extends GmailConnection implements MailClient
      * Sends a new email
      *
      * @param Request $request
-     * @return array
+     * @return void
      * @throws Throwable
      */
-    public function send(Request $request): array
+    public function send(Request $request): void
     {
         /**
          * @var PartnerUser $user
@@ -61,19 +63,19 @@ class LaravelGmail extends GmailConnection implements MailClient
             $mail->attach($request->input('attachments'));
         }
         $mail->send();
-        $mailData =  $this->get($mail->getId());
-        return [
-            'email_id' => $mail->getId(),
-            'thread_id' => $mail->getThreadId(),
-            'history_id' => $mailData ? $mailData->getHistoryId() : null,
-            'subject' => $mail->subject,
-            'from' => [
-                'name' => $user->name,
-                'address' => $mail->getFrom()['name'],
-            ],
-            'to' => $mail->getTo(),
-            'message' => $mail->message,
-        ];
+
+        if(Mail::query()->count() === 0) {
+            /**
+             * @var Contact $contact
+             */
+            $contact = Contact::find($request->input('parentable_id'));
+            /**
+             * @var MailAccessToken $token
+             */
+            $token = MailAccessToken::query()->where(['partner_user_id' => auth()->id(), 'type' => 'gmail'])->first();
+
+            $this->saveMessage($mail, $contact, $token);
+        }
     }
 
     private function getContacts(Request $request): array
@@ -107,12 +109,12 @@ class LaravelGmail extends GmailConnection implements MailClient
     }
 
     /**
-     * @param string $id
+     * @param ?string $id
      *
      * @return ListHistoryResponse
      * @throws \Google\Exception
      */
-    public function listHistory(string $id): ListHistoryResponse
+    public function listHistory(?string $id): ListHistoryResponse
     {
         $responseOrRequest = $this->service->users_history->listUsersHistory('me', [
             'startHistoryId' => $id,
@@ -131,10 +133,10 @@ class LaravelGmail extends GmailConnection implements MailClient
      * Sends a new email
      *
      * @param Request $request
-     * @return array
+     * @return void
      * @throws Throwable
      */
-    public function reply(Request $request): array
+    public function reply(Request $request): void
     {
         /**
          * @var PartnerUser $user
@@ -151,71 +153,59 @@ class LaravelGmail extends GmailConnection implements MailClient
         if (!is_null($request->input('attachments'))) {
             $mail->attach($request->input('attachments'));
         }
+
         $mail->reply();
-        $mailData = $this->get($mail->id);
-        return [
-            'email_id' => $mail->id,
-            'thread_id' => $mail->threadId,
-            'history_id' => $mailData ? $mailData->getHistoryId() : null,
-            'subject' => $mail->subject,
-            'from' => [
-                'name' => $user->name,
-                'address' => $mail->getFrom()['name'],
-            ],
-            'to' => $mail->getTo(),
-            'message' => $mail->message,
-        ];
     }
 
     /**
      * @throws UrlException|Exception
      */
-    public function checkReplies(Request $request, MailAccessToken $accessToken): Collection|bool
+    public function checkReplies(Request $request, MailAccessToken $accessToken): bool
     {
         $mails = Mail::query()->where('token_id', $accessToken->id)->get();
-        $data = $this->decodeMessageBody($request);
-        $historyResponse = $this->listHistory(!is_null($mails->last()) ? $mails->last()->history_id : $data['historyId']);
+        if($mails->count() === 0) return false;
+        /** @var Mail $lastMail */
+        $lastMail = $mails->last();
+        $historyResponse = $this->listHistory($lastMail->history_id);
         if ($historyResponse->getHistory()) {
             foreach ($historyResponse->getHistory() as $messages) {
                 foreach ($messages->getMessages() as $message){
-                        $singleEmail = $this->get($message->id);
+                    $singleEmail = $this->get($message->id);
 
-                        /** @var GmailMessages|null $mail */
-                        $mail = $singleEmail ? new GmailMessages($singleEmail) : null;
-                        if (!is_null($mail) && !is_null($mail->getHtmlBody())) {
-                            $contact = Contact::query()->where('email', $mail->from)->first();
-                            if ($mails->contains('thread_id', $message->threadId)) {
-                                /**
-                                 * @var Mail|null $thread
-                                 */
-                                $thread = Mail::withTrashed()->firstWhere('thread_id', $message->threadId);
-                                if (!is_null($thread)) {
-                                    if(!is_null($thread->deleted_at)) {
-                                        $thread->restore();
-                                    }
-                                    $contact = $thread->parentable;
+                    /** @var GmailMessages|null $mail */
+                    $mail = $singleEmail ? new GmailMessages($singleEmail) : null;
+                    if (!is_null($mail) && !is_null($mail->getHtmlBody())) {
+                        $contact = Contact::query()->where('email', $mail->from)->first();
+                        if ($mails->contains('thread_id', $message->threadId)) {
+                            /**
+                             * @var Mail|null $thread
+                             */
+                            $thread = Mail::withTrashed()->firstWhere('thread_id', $message->threadId);
+                            if (!is_null($thread)) {
+                                if(!is_null($thread->deleted_at)) {
+                                    $thread->restore();
                                 }
-
+                                $contact = $thread->parentable;
                             }
 
-                            if (!is_null($contact)) {
-                                $trashedMail = Mail::withTrashed()->firstWhere('email_id', $mail->id);
-                                if(is_null($trashedMail)) {
-                                    /**
-                                     * @var Mail $reply
-                                     */
-                                    $reply = $this->saveMessage($mail, $contact, $accessToken);
-                                    $reply->saveAttachments($mail->getAttachments());
-                                    $mails->add($reply);
-                                }
-                            }
                         }
 
+                        if (!is_null($contact)) {
+                            $trashedMail = Mail::withTrashed()->firstWhere('email_id', $mail->id);
+                            if(is_null($trashedMail)) {
+                                /**
+                                 * @var Mail $reply
+                                 */
+                                $reply = $this->saveMessage($mail, $contact, $accessToken);
+                                $reply->saveAttachments($mail->getAttachments());
+                                $mails->add($reply);
+                            }
+                        }
+                    }
                 }
             }
         }
-
-        return $mails;
+        return true;
     }
 
     /**

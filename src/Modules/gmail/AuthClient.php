@@ -63,6 +63,7 @@ class AuthClient extends \Google_Client implements MailClientAuth
         $me = $this->getProfile();
         if (property_exists($me, 'emailAddress')) {
             $accessToken['email'] = $me->emailAddress;
+            $this->subscriptions();
         }
 
         MailAccessToken::query()->updateOrCreate([
@@ -72,7 +73,8 @@ class AuthClient extends \Google_Client implements MailClientAuth
             'access_token' => $accessToken['access_token'],
             'refresh_token' => $accessToken['refresh_token'],
             'expires_in' => $accessToken['expires_in'],
-            'email' => $accessToken['email']
+            'email' => $accessToken['email'],
+            'user_mail_id' => $accessToken['email'],
         ]);
     }
 
@@ -88,6 +90,7 @@ class AuthClient extends \Google_Client implements MailClientAuth
 
     public function clearTokens(): void
     {
+        //$this->stopWatch();
         $this->revokeToken();
 
         // Change to get Social Access Token for authenticated users
@@ -97,13 +100,11 @@ class AuthClient extends \Google_Client implements MailClientAuth
     /**
      * users.stop receiving push notifications for the given user mailbox.
      *
-     * @param  string  $userEmail  Email address
-     * @param  array  $optParams
      * @return Google_Service_Gmail
      */
-    public function stopWatch(string $userEmail, array $optParams = []): Google_Service_Gmail
+    public function stopWatch(): Google_Service_Gmail
     {
-        return $this->service->users->stop($userEmail, $optParams);
+        return $this->service->users->stop('me');
     }
 
     /**
@@ -111,7 +112,7 @@ class AuthClient extends \Google_Client implements MailClientAuth
      *
      * @return WatchResponse
      */
-    public function setWatch(): WatchResponse
+    public function subscriptions(): WatchResponse
     {
         $projectId = config('laravel-mail-integration.services.gmail.project_id');
         $rq = new Google_Service_Gmail_WatchRequest();
