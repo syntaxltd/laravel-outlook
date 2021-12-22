@@ -11,9 +11,7 @@ use Google\Service\Gmail\ListHistoryResponse;
 use Google_Service_Gmail_Message;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
 use Safe\Exceptions\JsonException;
 use Safe\Exceptions\UrlException;
 use Syntax\LaravelMailIntegration\Contracts\MailClient;
@@ -74,7 +72,8 @@ class LaravelGmail extends GmailConnection implements MailClient
              */
             $token = MailAccessToken::query()->where(['partner_user_id' => auth()->id(), 'type' => 'gmail'])->first();
 
-            $this->saveMessage($mail, $contact, $token);
+            $mailData = new GmailMessages($this->get($mail->getId()));
+            $this->saveMessage($mailData, $contact, $token);
         }
     }
 
@@ -138,11 +137,6 @@ class LaravelGmail extends GmailConnection implements MailClient
      */
     public function reply(Request $request): void
     {
-        /**
-         * @var PartnerUser $user
-         */
-        $user = auth('partneruser')->user();
-
         $mail = new GmailMessages($this->get($request->input('email_id')));
         $mail->to($this->getContacts($request));
         $mail->cc($request->input('cc'));
